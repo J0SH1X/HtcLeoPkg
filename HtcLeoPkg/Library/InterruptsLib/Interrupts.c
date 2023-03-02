@@ -107,6 +107,7 @@ enum handler_return platform_irq(struct arm_iframe *frame)
 	return ret;
 }
 
+/* Calls into the handler?? */
 VOID
 EFIAPI
 InterruptsLibIrqHandler (
@@ -123,7 +124,7 @@ InterruptsLibIrqHandler (
   OriginalTPL = gBS->RaiseTPL (TPL_HIGH_LEVEL);
 
   // call handler, ignore the return value because we don't support threads
-  //Entry->Handler (Entry->Arg);
+  Entry->Handler (Entry->Arg);//doesn't work
 
   gBS->RestoreTPL (OriginalTPL);
 
@@ -146,7 +147,7 @@ INTN unmask_interrupt(UINTN Vector)
 }
 
 
-VOID register_int_handler(UINTN Vector, int_handler Handler, VOID *Arg)//needs fixup??
+VOID register_int_handler(UINTN Vector, int_handler Handler, VOID *Arg)
 {
     EFI_STATUS     Status;
     EFI_TPL        OriginalTPL;

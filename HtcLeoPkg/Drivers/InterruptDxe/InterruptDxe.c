@@ -72,6 +72,8 @@ ExitBootServicesEvent (
   @retval EFI_DEVICE_ERROR  Hardware could not be programmed.
 
 **/
+
+//equivalent in lk: register_int_handler
 EFI_STATUS
 EFIAPI
 RegisterInterruptSource (
@@ -236,10 +238,11 @@ IrqInterruptHandler (
   IN EFI_SYSTEM_CONTEXT           SystemContext
   )
 {
-  /*UINT32                     Vector;
+  UINT32                     Vector;
   HARDWARE_INTERRUPT_HANDLER InterruptHandler;
   
-  Vector = MmioRead32 (VIC(0) + VICADDRESS);//VIC_IRQ_VEC_PEND_RD
+  //Vector = MmioRead32 (VIC(0) + VICADDRESS);//VIC_IRQ_VEC_PEND_RD
+  Vector = MmioRead32 (VIC_IRQ_VEC_PEND_RD);
 
   // Needed to prevent infinite nesting when Time Driver lowers TPL
   ArmDataSynchronizationBarrier ();
@@ -251,11 +254,8 @@ IrqInterruptHandler (
   }
   
   // Needed to clear after running the handler
-  MmioWrite32 (VIC(0) + VICADDRESS, 0);
-  ArmDataSyncronizationBarrier ();*/
-  
-  
-  //platform_irq(struct arm_iframe *frame);
+  //MmioWrite32 (VIC(0) + VICADDRESS, 0);
+  ArmDataSynchronizationBarrier ();
 }
 
 //
