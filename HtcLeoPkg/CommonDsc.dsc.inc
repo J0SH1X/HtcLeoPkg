@@ -72,6 +72,9 @@
 
   TimerLib|HtcLeoPkg/Library/TimerLib/TimerLib.inf
 
+  OpsLib|HtcLeoPkg/Library/OpsLib/OpsLib.inf
+  InterruptsLib|HtcLeoPkg/Library/InterruptsLib/InterruptsLib.inf
+
   UefiDevicePathLib|MdePkg/Library/UefiDevicePathLib/UefiDevicePathLib.inf
   #
   # Uncomment (and comment out the next line) For RealView Debugger. The Standard IO window

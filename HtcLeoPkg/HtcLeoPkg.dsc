@@ -198,6 +198,7 @@
 
   # ArmPkg/Drivers/ArmGic/ArmGicDxe.inf
   # ArmPkg/Drivers/TimerDxe/TimerDxe.inf
+  HtcLeoPkg/Drivers/InterruptDxe/InterruptDxe.inf
 
   MdeModulePkg/Universal/WatchdogTimerDxe/WatchdogTimer.inf
 
