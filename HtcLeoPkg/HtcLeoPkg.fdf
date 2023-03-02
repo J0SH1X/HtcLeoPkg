@@ -115,6 +115,7 @@ APRIORI DXE {
 
   # INF ArmPkg/Drivers/ArmGic/ArmGicDxe.inf
   # INF ArmPkg/Drivers/TimerDxe/TimerDxe.inf
+  INF HtcLeoPkg/Drivers/InterruptDxe/InterruptDxe.inf
 
   INF MdeModulePkg/Universal/WatchdogTimerDxe/WatchdogTimer.inf
 
