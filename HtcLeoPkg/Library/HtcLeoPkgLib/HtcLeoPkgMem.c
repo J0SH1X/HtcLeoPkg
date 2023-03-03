@@ -56,23 +56,11 @@ ArmPlatformGetVirtualMemoryMap (
 
   CacheAttributes = DDR_ATTRIBUTES_CACHED;
 
-  // SOC registers region
-  VirtualMemoryTable[Index].PhysicalBase   = 0x00000000;
-  VirtualMemoryTable[Index].VirtualBase    = 0x00000000;
-  VirtualMemoryTable[Index].Length         = 0x11800000;
-  VirtualMemoryTable[Index].Attributes     = SOC_REGISTERS_ATTRIBUTES;
-
   // Framebuffer
-  /*VirtualMemoryTable[++Index].PhysicalBase = 0x02A00000;
+  VirtualMemoryTable[++Index].PhysicalBase = 0x02A00000;
   VirtualMemoryTable[Index].VirtualBase    = 0x02A00000;
-  VirtualMemoryTable[Index].Length         = 0x000BBB00;
-  VirtualMemoryTable[Index].Attributes     = DDR_ATTRIBUTES_UNCACHED;*/
-
-  // SOC registers region 2
-  /*VirtualMemoryTable[Index].PhysicalBase   = 0x02ABBB00;
-  VirtualMemoryTable[Index].VirtualBase    = 0x02ABBB00;
-  VirtualMemoryTable[Index].Length         = 0x0ED44500;
-  VirtualMemoryTable[Index].Attributes     = SOC_REGISTERS_ATTRIBUTES;*/
+  VirtualMemoryTable[Index].Length         = 0x000CBB00;
+  VirtualMemoryTable[Index].Attributes     = SOC_REGISTERS_ATTRIBUTES;
 
   // Rearranged system memory regions
   VirtualMemoryTable[++Index].PhysicalBase = 0x11800000;
@@ -91,6 +79,12 @@ ArmPlatformGetVirtualMemoryMap (
   VirtualMemoryTable[Index].VirtualBase    = 0x11A08000;
   VirtualMemoryTable[Index].Length         = 0x1E5F8000;
   VirtualMemoryTable[Index].Attributes     = CacheAttributes;
+
+  // VIC registers
+  VirtualMemoryTable[++Index].PhysicalBase = 0xAC000000;
+  VirtualMemoryTable[Index].VirtualBase    = 0xAC000000;
+  VirtualMemoryTable[Index].Length         = 0x00100000;
+  VirtualMemoryTable[Index].Attributes     = SOC_REGISTERS_ATTRIBUTES;
 
   // End of Table
   VirtualMemoryTable[++Index].PhysicalBase = 0;
