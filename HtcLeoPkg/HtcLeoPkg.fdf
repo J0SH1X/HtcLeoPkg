@@ -59,7 +59,7 @@ APRIORI DXE {
   INF MdeModulePkg/Universal/StatusCodeHandler/RuntimeDxe/StatusCodeHandlerRuntimeDxe.inf
   INF MdeModulePkg/Core/RuntimeDxe/RuntimeDxe.inf
   INF ArmPkg/Drivers/CpuDxe/CpuDxe.inf
-  # INF ArmPkg/Drivers/ArmGic/ArmGicDxe.inf
+  INF HtcLeoPkg/Drivers/InterruptDxe/InterruptDxe.inf
   # INF ArmPkg/Drivers/TimerDxe/TimerDxe.inf
   INF MdeModulePkg/Universal/WatchdogTimerDxe/WatchdogTimer.inf
   INF MdeModulePkg/Universal/SecurityStubDxe/SecurityStubDxe.inf
