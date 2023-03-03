@@ -107,7 +107,7 @@ enum handler_return platform_irq(struct arm_iframe *frame)
 	return ret;
 }
 
-/* Calls into the handler?? */
+/* Calls into the handler */
 VOID
 EFIAPI
 InterruptsLibIrqHandler (
@@ -124,7 +124,7 @@ InterruptsLibIrqHandler (
   OriginalTPL = gBS->RaiseTPL (TPL_HIGH_LEVEL);
 
   // call handler, ignore the return value because we don't support threads
-  Entry->Handler (Entry->Arg);//doesn't work
+  Entry->Handler (Entry->Arg);
 
   gBS->RestoreTPL (OriginalTPL);
 
@@ -132,6 +132,7 @@ InterruptsLibIrqHandler (
   mInterrupt->EndOfInterrupt (mInterrupt, Source);
 }
 
+/* disables the interrupt */
 INTN mask_interrupt(UINTN Vector)
 {
     EFI_STATUS Status = mInterrupt->DisableInterruptSource (mInterrupt, Vector);
@@ -139,6 +140,7 @@ INTN mask_interrupt(UINTN Vector)
     return Status==EFI_SUCCESS?0:-1;
 }
 
+/* enables the interrupt */
 INTN unmask_interrupt(UINTN Vector)
 {
     EFI_STATUS Status = mInterrupt->EnableInterruptSource (mInterrupt, Vector);
@@ -146,7 +148,7 @@ INTN unmask_interrupt(UINTN Vector)
     return Status==EFI_SUCCESS?0:-1;
 }
 
-
+/* Registers an interrupt handler for an IRQ */
 VOID register_int_handler(UINTN Vector, int_handler Handler, VOID *Arg)
 {
     EFI_STATUS     Status;
