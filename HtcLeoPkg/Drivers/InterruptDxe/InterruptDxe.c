@@ -37,9 +37,7 @@
 //
 EFI_EVENT EfiExitBootServicesEvent      = (EFI_EVENT)NULL;
 
-#define MAX_VECTOR    32
-
-HARDWARE_INTERRUPT_HANDLER  gRegisteredInterruptHandlers[MAX_VECTOR];
+HARDWARE_INTERRUPT_HANDLER  gRegisteredInterruptHandlers[NR_IRQS];
 
 /**
   Shutdown our hardware
@@ -73,7 +71,7 @@ ExitBootServicesEvent (
 
 **/
 
-//equivalent in lk: register_int_handler
+
 EFI_STATUS
 EFIAPI
 RegisterInterruptSource (
@@ -82,7 +80,7 @@ RegisterInterruptSource (
   IN HARDWARE_INTERRUPT_HANDLER         Handler
   )
 {
-  if (Source > MAX_VECTOR) {
+  if (Source > NR_IRQS) {
     ASSERT(FALSE);
     return EFI_UNSUPPORTED;
   } 
@@ -117,12 +115,11 @@ EnableInterruptSource (
   IN HARDWARE_INTERRUPT_SOURCE          Source
   )
 {
-  //unsigned reg = (Vector > 31) ? VIC_INT_ENCLEAR1 : VIC_INT_ENCLEAR0;
-	//unsigned bit = 1 << (Vector & 31);
-  unsigned reg = (Source > 31) ? VIC_INT_ENCLEAR1 : VIC_INT_ENCLEAR0;
+  /* Called by unmask_interrupt() */
+  unsigned reg = (Source > 31) ? VIC_INT_ENSET1 : VIC_INT_ENSET0;
 	unsigned bit = 1 << (Source & 31);
 	MmioWrite32(reg, bit);
-  
+
   return EFI_SUCCESS;
 }
 
@@ -144,15 +141,13 @@ DisableInterruptSource (
   IN HARDWARE_INTERRUPT_SOURCE          Source
   )
 {
-  //unsigned reg = (Vector > 31) ? VIC_INT_ENSET1 : VIC_INT_ENSET0;
-	//unsigned bit = 1 << (Vector & 31);
-  unsigned reg = (Source > 31) ? VIC_INT_ENSET1 : VIC_INT_ENSET0;
+  /* Called by mask_interrupt() */
+  unsigned reg = (Source > 31) ? VIC_INT_ENCLEAR1 : VIC_INT_ENCLEAR0;
 	unsigned bit = 1 << (Source & 31);
 	MmioWrite32(reg, bit);
-
+  
   return EFI_SUCCESS;
 }
-
 
 
 /**
@@ -174,24 +169,7 @@ GetInterruptSourceState (
   IN BOOLEAN                            *InterruptState
   )
 {
-  /*UINTN Bit;
-  
-  if (InterruptState == NULL) {
-    return EFI_INVALID_PARAMETER;
-  }
-  
-  if (Source > MAX_VECTOR) {
-    ASSERT(FALSE);
-    return EFI_UNSUPPORTED;
-  }
-
-  Bit  = 1UL << (Source % 32);
-    
-  if ((MmioRead32(VIC(0) + VICINTENABLE) & Bit) == Bit) {
-    *InterruptState = FALSE;
-  } else {
-    *InterruptState = TRUE;
-  }*/
+  /* TBD */
   
   return EFI_SUCCESS;
 }
@@ -214,8 +192,7 @@ EndOfInterrupt (
   IN HARDWARE_INTERRUPT_SOURCE          Source
   )
 {
-  /*MmioWrite32 (VIC(0) + VICADDRESS, 0);
-  ArmDataSyncronizationBarrier ();*/
+  /* TBD */
   return EFI_SUCCESS;
 }
 
@@ -241,7 +218,6 @@ IrqInterruptHandler (
   UINT32                     Vector;
   HARDWARE_INTERRUPT_HANDLER InterruptHandler;
   
-  //Vector = MmioRead32 (VIC(0) + VICADDRESS);//VIC_IRQ_VEC_PEND_RD
   Vector = MmioRead32 (VIC_IRQ_VEC_PEND_RD);
 
   // Needed to prevent infinite nesting when Time Driver lowers TPL
