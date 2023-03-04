@@ -41,7 +41,7 @@
   UefiDriverEntryPoint
   IoLib
   ArmLib
-  InterruptsLib
+  # InterruptsLib
   OpsLib
 
 [Protocols]

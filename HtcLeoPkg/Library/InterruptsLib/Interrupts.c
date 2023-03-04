@@ -185,19 +185,6 @@ VOID register_int_handler(UINTN Vector, int_handler Handler, VOID *Arg)
     gBS->RestoreTPL (OriginalTPL);
 }
 
-VOID htcleo_disable_interrupts(VOID)
-{
-	//clear current pending interrupts
-	writel(0xffffffff, VIC_INT_CLEAR0);
-	writel(0xffffffff, VIC_INT_CLEAR1);
-
-	//disable all
-	writel(0, VIC_INT_EN0);
-	writel(0, VIC_INT_EN1);
-	//disable interrupts
-	writel(0, VIC_INT_MASTEREN);
-}
-
 
 RETURN_STATUS
 EFIAPI
