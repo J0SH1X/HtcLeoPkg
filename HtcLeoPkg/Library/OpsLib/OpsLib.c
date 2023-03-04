@@ -2,7 +2,7 @@
 #include <Library/OpsLib.h>
 
 /* critical sections */
-extern int critical_section_count;
+int critical_section_count;
 
 //static inline 
 void enter_critical_section(void)

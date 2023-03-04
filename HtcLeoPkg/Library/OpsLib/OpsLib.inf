@@ -1,11 +1,10 @@
 [Defines]
   INF_VERSION                    = 0x00010005
-  BASE_NAME                      = InterruptsLib
+  BASE_NAME                      = OpsLib
   FILE_GUID                      = 8BEED46D-16CD-4C2F-8C7B-8DB81BBBE1AE
   MODULE_TYPE                    = BASE
   VERSION_STRING                 = 1.0
-  LIBRARY_CLASS                  = InterruptsLib|DXE_DRIVER UEFI_APPLICATION UEFI_DRIVER
-  CONSTRUCTOR                    = InterruptsLibConstructor
+  LIBRARY_CLASS                  = OpsLib|DXE_DRIVER UEFI_APPLICATION UEFI_DRIVER
 
 [Packages]
   MdePkg/MdePkg.dec
