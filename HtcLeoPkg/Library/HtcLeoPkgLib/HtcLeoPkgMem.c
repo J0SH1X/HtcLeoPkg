@@ -56,10 +56,22 @@ ArmPlatformGetVirtualMemoryMap (
 
   CacheAttributes = DDR_ATTRIBUTES_CACHED;
 
+  // Registers regions (???)
+  VirtualMemoryTable[++Index].PhysicalBase = 0x00000000;
+  VirtualMemoryTable[Index].VirtualBase    = 0x00000000;
+  VirtualMemoryTable[Index].Length         = 0x02A00000;
+  VirtualMemoryTable[Index].Attributes     = SOC_REGISTERS_ATTRIBUTES;
+
   // Framebuffer
   VirtualMemoryTable[++Index].PhysicalBase = 0x02A00000;
   VirtualMemoryTable[Index].VirtualBase    = 0x02A00000;
   VirtualMemoryTable[Index].Length         = 0x000CBB00;
+  VirtualMemoryTable[Index].Attributes     = SOC_REGISTERS_ATTRIBUTES;
+
+  // Registers regions (???)
+  VirtualMemoryTable[++Index].PhysicalBase = 0x02ACBB00;
+  VirtualMemoryTable[Index].VirtualBase    = 0x02ACBB00;
+  VirtualMemoryTable[Index].Length         = 0x0ED34500;
   VirtualMemoryTable[Index].Attributes     = SOC_REGISTERS_ATTRIBUTES;
 
   // Rearranged system memory regions
@@ -80,10 +92,10 @@ ArmPlatformGetVirtualMemoryMap (
   VirtualMemoryTable[Index].Length         = 0x1E5F8000;
   VirtualMemoryTable[Index].Attributes     = CacheAttributes;
 
-  // VIC registers
-  VirtualMemoryTable[++Index].PhysicalBase = 0xAC000000;
-  VirtualMemoryTable[Index].VirtualBase    = 0xAC000000;
-  VirtualMemoryTable[Index].Length         = 0x00100000;
+  // Peripheral region
+  VirtualMemoryTable[++Index].PhysicalBase = 0xA0300000;
+  VirtualMemoryTable[Index].VirtualBase    = 0xA0300000;
+  VirtualMemoryTable[Index].Length         = 0x0BE00104;
   VirtualMemoryTable[Index].Attributes     = SOC_REGISTERS_ATTRIBUTES;
 
   // End of Table
@@ -96,14 +108,3 @@ ArmPlatformGetVirtualMemoryMap (
 
   *VirtualMemoryMap = VirtualMemoryTable;
 }
-
-// DDR - 1.0GB section
-    /*VirtualMemoryTable[Index].PhysicalBase    = PcdGet64 (PcdSystemMemoryBase);
-    VirtualMemoryTable[Index].VirtualBase     = PcdGet64 (PcdSystemMemoryBase);
-    VirtualMemoryTable[Index].Length          = PcdGet64 (PcdSystemMemorySize);
-    VirtualMemoryTable[Index].Attributes      = CacheAttributes;
-    // QSD8250 SOC peripherals
-    VirtualMemoryTable[++Index].PhysicalBase  = QSD8250_PERIPH_BASE;
-    VirtualMemoryTable[Index].VirtualBase     = QSD8250_PERIPH_BASE;
-    VirtualMemoryTable[Index].Length          = QSD8250_PERIPH_SZ;
-    VirtualMemoryTable[Index].Attributes      = ARM_MEMORY_REGION_ATTRIBUTE_DEVICE;*/
