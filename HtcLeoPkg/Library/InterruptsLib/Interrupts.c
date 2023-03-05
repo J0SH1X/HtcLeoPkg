@@ -81,18 +81,6 @@ STATIC HANDLER_ENTRY* GetInterruptHandlerEntry (UINTN Vector)
   return NULL;
 }
 
-void platform_init_interrupts()
-{
-	writel(0xffffffff, VIC_INT_CLEAR0);
-	writel(0xffffffff, VIC_INT_CLEAR1);
-	writel(0, VIC_INT_SELECT0);
-	writel(0, VIC_INT_SELECT1);
-	writel(0xffffffff, VIC_INT_TYPE0);
-	writel(0xffffffff, VIC_INT_TYPE1);
-	writel(0, VIC_CONFIG);
-	writel(1, VIC_INT_MASTEREN);
-}
-
 enum handler_return platform_irq(struct arm_iframe *frame)
 {
   unsigned num;
@@ -178,9 +166,6 @@ VOID register_int_handler(UINTN Vector, int_handler Handler, VOID *Arg)
     // register interrupt source
     Status = mInterrupt->RegisterInterruptSource (mInterrupt, Vector, InterruptsLibIrqHandler);
     ASSERT_EFI_ERROR (Status);
-
-    // disable interrupt source
-    //mask_interrupt (Vector);
 
     gBS->RestoreTPL (OriginalTPL);
 }
