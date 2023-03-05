@@ -107,7 +107,7 @@ RegisterInterruptSource (
   }
 
   gRegisteredInterruptHandlers[Source] = Handler;
-  return This->EnableInterruptSource(This, Source);
+  return EFI_SUCCESS;
 }
 
 
@@ -183,7 +183,6 @@ GetInterruptSourceState (
   )
 {
   /* TBD */
-  
   return EFI_SUCCESS;
 }
 
@@ -241,9 +240,6 @@ IrqInterruptHandler (
     // Call the registered interrupt handler.
     InterruptHandler (Vector, SystemContext);
   }
-  
-  // Needed to clear after running the handler
-  //MmioWrite32 (VIC(0) + VICADDRESS, 0);
   ArmDataSynchronizationBarrier ();
 }
 

@@ -180,7 +180,7 @@ VOID register_int_handler(UINTN Vector, int_handler Handler, VOID *Arg)
     ASSERT_EFI_ERROR (Status);
 
     // disable interrupt source
-    mask_interrupt (Vector);
+    //mask_interrupt (Vector);
 
     gBS->RestoreTPL (OriginalTPL);
 }
