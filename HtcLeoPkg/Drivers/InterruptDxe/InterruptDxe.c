@@ -39,17 +39,32 @@ EFI_EVENT EfiExitBootServicesEvent      = (EFI_EVENT)NULL;
 
 HARDWARE_INTERRUPT_HANDLER  gRegisteredInterruptHandlers[NR_IRQS];
 
-VOID htcleo_disable_interrupts(VOID)
+VOID platform_init_interrupts(VOID)
 {
-	//clear current pending interrupts
 	writel(0xffffffff, VIC_INT_CLEAR0);
 	writel(0xffffffff, VIC_INT_CLEAR1);
+	writel(0, VIC_INT_SELECT0);
+	writel(0, VIC_INT_SELECT1);
+	writel(0xffffffff, VIC_INT_TYPE0);
+	writel(0xffffffff, VIC_INT_TYPE1);
+	writel(0, VIC_CONFIG);
+	writel(1, VIC_INT_EN0);
+	writel(1, VIC_INT_EN1);
+	writel(1, VIC_INT_MASTEREN);
+}
 
-	//disable all
+VOID platform_deinit_interrupts(VOID)
+{
+	writel(0, VIC_INT_MASTEREN);
 	writel(0, VIC_INT_EN0);
 	writel(0, VIC_INT_EN1);
-	//disable interrupts
-	writel(0, VIC_INT_MASTEREN);
+	writel(0xffffffff, VIC_INT_CLEAR0);
+	writel(0xffffffff, VIC_INT_CLEAR1);
+	writel(0, VIC_INT_SELECT0);
+	writel(0, VIC_INT_SELECT1);
+	writel(0xffffffff, VIC_INT_TYPE0);
+	writel(0xffffffff, VIC_INT_TYPE1);
+	writel(0, VIC_CONFIG);
 }
 
 /**
@@ -69,7 +84,7 @@ ExitBootServicesEvent (
   )
 {
   // Disable all interrupts
-  htcleo_disable_interrupts();
+  platform_deinit_interrupts();
 }
 
 /**
@@ -281,9 +296,6 @@ InterruptDxeInitialize (
 
   // Make sure the Interrupt Controller Protocol is not already installed in the system.
   ASSERT_PROTOCOL_ALREADY_INSTALLED (NULL, &gHardwareInterruptProtocolGuid);
-
-  // Make sure all interrupts are disabled by default.
-  htcleo_disable_interrupts();
  
   Status = gBS->InstallMultipleProtocolInterfaces(&gHardwareInterruptHandle,
                                                   &gHardwareInterruptProtocolGuid,   &gHardwareInterruptProtocol,
@@ -311,6 +323,8 @@ InterruptDxeInitialize (
   // Register for an ExitBootServicesEvent
   Status = gBS->CreateEvent(EVT_SIGNAL_EXIT_BOOT_SERVICES, TPL_NOTIFY, ExitBootServicesEvent, NULL, &EfiExitBootServicesEvent);
   ASSERT_EFI_ERROR(Status);
+
+  platform_init_interrupts();
 
   return Status;
 }

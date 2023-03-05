@@ -46,10 +46,8 @@ typedef enum handler_return (*int_handler)(VOID *arg);
 INTN mask_interrupt(UINTN vector);
 INTN unmask_interrupt(UINTN vector);
 VOID register_int_handler(UINTN vector, int_handler handler, VOID *arg);
-//VOID register_int_handler(UINTN vector, int handler, VOID *arg);
 
 VOID platform_init_interrupts(VOID);
-VOID htcleo_disable_interrupts(VOID);
-//enum handler_return platform_irq(struct arm_iframe *frame);
+VOID platform_deinit_interrupts(VOID);
 
 #endif
