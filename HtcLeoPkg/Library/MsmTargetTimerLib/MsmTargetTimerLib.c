@@ -22,10 +22,10 @@
 
 #include <Library/qcom_lk.h>
 
-#include <Library/qcom_msm8960_iomap.h>
-#include <Library/qcom_msm8960_irqs.h>
-#include <Library/qcom_msm8960_clock.h>
-#include <Library/qcom_msm8960_timer.h>
+#include <Library/qcom_qsd8250_iomap.h>
+#include <Library/qcom_qsd8250_irqs.h>
+#include <Library/qcom_qsd8250_clock.h>
+#include <Library/qcom_qsd8250_timer.h>
 #include <ArmGenericTimerCounterLib.h>
 
 #ifdef MDE_CPU_ARM
@@ -180,11 +180,11 @@ VOID Set_DGT_ClrOnMatch(int en)
 	MmioWrite32 (DGT_ENABLE, DATA_NEW);
 }
 
-#define GIC_DIST_REG(off)           (MSM_GIC_DIST_BASE + (off))
+/*#define GIC_DIST_REG(off)           (MSM_GIC_DIST_BASE + (off))
 #define GIC_DIST_ENABLE_CLEAR       GIC_DIST_REG(0x180)
 
 #define GIC_PPI_START 16
-#define INT_DEBUG_TIMER_EXP     (GIC_PPI_START + 1)
+#define INT_DEBUG_TIMER_EXP     (GIC_PPI_START + 1)*/
 
 //΢��
 UINTN
@@ -196,7 +196,7 @@ NanoSecondDelay (
 	//DEBUG ((EFI_D_ERROR, "TimerLib:NanoSecondDelay NanoSeconds=%d,use udelay start\n",NanoSeconds));
 	
 	UINTN ret = 0;
-	{
+	/*{
 		UINT32 vector = INT_DEBUG_TIMER_EXP;
 		
 		UINT32 reg = GIC_DIST_ENABLE_CLEAR + (vector / 32) * 4;
@@ -252,7 +252,7 @@ NanoSecondDelay (
 	//{
 	//	ret = NanoSeconds;
 	//}
-	//DEBUG ((EFI_D_ERROR, "TimerLib:NanoSecondDelay NanoSeconds=%d,use udelay end\n",NanoSeconds));
+	//DEBUG ((EFI_D_ERROR, "TimerLib:NanoSecondDelay NanoSeconds=%d,use udelay end\n",NanoSeconds));*/
 	
 	return ret;
 }

@@ -58,7 +58,7 @@
 #define writel(v, a) MmioWrite32((UINTN)(a),(v))
 #define readl(a) MmioRead32((UINTN)(a))
 #define dmb ArmDataMemoryBarrier
-#define dsb ArmDataSyncronizationBarrier
+#define dsb ArmDataSynchronizationBarrier
 
 // define a macro that unconditionally swaps
 #define SWAP_32(x) \
@@ -95,5 +95,7 @@ extern void udelay(unsigned usecs);
 #define RMWREG16(addr, startbit, width, val) *REG16(addr) = (*REG16(addr) & ~(((1<<(width)) - 1) << (startbit))) | ((val) << (startbit))
 #define RMWREG8(addr, startbit, width, val) *REG8(addr) = (*REG8(addr) & ~(((1<<(width)) - 1) << (startbit))) | ((val) << (startbit))
 
+#define __UNUSED //added
+typedef int bool;//added
 
 #endif

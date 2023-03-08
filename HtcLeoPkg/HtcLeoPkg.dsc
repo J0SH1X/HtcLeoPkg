@@ -81,6 +81,7 @@
   CompilerIntrinsicsLib|ArmPkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf
 
   # SoC Drivers
+  MsmPcomLib|HtcLeoPkg/Library/MsmPcomLib/MsmPcomLib.inf
   MsmClockLib|HtcLeoPkg/Library/MsmClockLib/MsmClockLib.inf
   MsmTargetClockLib|HtcLeoPkg/Library/MsmTargetClockLib/MsmTargetClockLib.inf
   MsmTargetMmcLib|HtcLeoPkg/Library/MsmTargetMmcLib/MsmTargetMmcLib.inf
@@ -235,7 +236,7 @@
   HtcLeoPkg/Drivers/LogoDxe/LogoDxe.inf
 
   # Drivers
-  HtcLeoPkg/Drivers/MMCHSDxe/MMCHS.inf
+  HtcLeoPkg/Drivers/ClockDxe/ClockDxe.inf
 
   #
   # USB Host Support

@@ -1,991 +1,855 @@
-/** @file
-
-  Copyright (c) 2008 - 2009, Apple Inc. All rights reserved.<BR>
-
-  This program and the accompanying materials
-  are licensed and made available under the terms and conditions of the BSD License
-  which accompanies this distribution.  The full text of the license may be found at
-  http://opensource.org/licenses/bsd-license.php
-
-  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
-  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
-
-**/
+/* Copyright (c) 2011-2012, Code Aurora Forum. All rights reserved. *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
 
 #include <Library/IoLib.h>
 #include <Library/DebugLib.h>
 #include <Library/ArmLib.h>
 
 #include <Library/qcom_lk.h>
+#include <Library/pcom.h>
 
-#include <Library/qcom_msm8960_iomap.h>
-#include <Library/qcom_msm8960_irqs.h>
-#include <Library/qcom_msm8960_clock.h>
-
-
-#include <Library/qcom_clock.h>
-#include <Library/qcom_clock_pll.h>
-#include <Library/qcom_clock_local.h>
+#include <Library/qcom_qsd8250_iomap.h>
+#include <Library/qcom_qsd8250_irqs.h>
+#include <Library/qcom_qsd8250_clock.h>
 
 
+//#include <Library/qcom_clock.h>
+//#include <Library/qcom_clock_pll.h>
+//#include <Library/qcom_clock_local.h>
 
+/*
+ * Copyright (C) 2007 Google, Inc.
+ * Copyright (c) 2007 QUALCOMM Incorporated
+ * Copyright (c) 2010 Cotulla
+ * Copyright (c) 2012 Shantanu Gupta <shans95g@gmail.com>
+ *
+ * This software is licensed under the terms of the GNU General Public
+ * License version 2, as published by the Free Software Foundation, and
+ * may be copied, distributed, and modified under those terms.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
+ * GNU General Public License for more details.
+ *
+ */
+ 
+/*#include <array.h>
+#include <compiler.h>
+#include <reg.h>
+#include <pcom.h>
+#include <kernel/thread.h>
+#include <platform/iomap.h>
+#include <target/clock.h>
+#include <platform/timer.h>*/
 
-static int xo_clk_enable(struct clk *clk)
+#define TCX0               19200000
+#define GLBL_CLK_ENA       ((UINT32)MSM_CLK_CTL_BASE)
+#define GLBL_CLK_ENA_2     ((UINT32)MSM_CLK_CTL_BASE + 0x220)
+#define PLLn_BASE(n)       (MSM_CLK_CTL_BASE + 0x300 + 32 * (n))
+#define PLL_FREQ(l, m, n)  (TCX0 * (l) + TCX0 * (m) / (n))
+
+struct mdns_clock_params
 {
-	/* Assuming pxo already running */
-	return 0;
+	unsigned freq;
+	UINT32 calc_freq;
+	UINT32 md;
+	UINT32 ns;
+	UINT32 pll_freq;
+	UINT32 clk_id;
+};
+
+struct msm_clock_params
+{
+	unsigned clk_id;
+	UINT32 glbl;
+	unsigned idx;
+	unsigned offset;
+	unsigned ns_only;
+	char	 *name;
+};
+
+static unsigned int pll_get_rate(int n)
+{
+	unsigned int mode __UNUSED, L, M, N, freq;
+	if (n == -1)
+		return TCX0;
+		
+	if (n > 1) {
+		return 0;
+	} else {
+		mode = readl(PLLn_BASE(n) + 0x0);
+		L = readl(PLLn_BASE(n) + 0x4);
+		M = readl(PLLn_BASE(n) + 0x8);
+		N = readl(PLLn_BASE(n) + 0xc);
+		freq = PLL_FREQ(L, M, N);
+	}
+	
+	return freq;
 }
 
-static void xo_clk_disable(struct clk *clk)
+static int idx2pll(UINT32 idx)
 {
-	/* Do nothing */
+	switch(idx)	{
+		case 0: /* TCX0 */
+			return -1;
+		case 1: /* PLL1 */
+			return 1;
+		case 4: /* PLL0 */
+			return 0;
+		default:
+			return 4;
+	}
 }
 
-static struct clk_ops clk_ops_xo = {
-	.enable = xo_clk_enable,
-	.disable = xo_clk_disable,
-	.get_rate = fixed_clk_get_rate,
+static struct msm_clock_params msm_clock_parameters[] = {
+	/* clk_id 					 glbl 					 idx 		 offset 			 ns_only 			 name  			*/
+	{ .clk_id = SDC1_CLK,		.glbl = GLBL_CLK_ENA, 	.idx =  7,	.offset = 0x0a4,						.name="SDC1_CLK"	},
+	{ .clk_id = SDC2_CLK,		.glbl = GLBL_CLK_ENA, 	.idx =  8, 	.offset = 0x0ac, 						.name="SDC2_CLK"	},
+	{ .clk_id = SDC3_CLK,		.glbl = GLBL_CLK_ENA, 	.idx = 27, 	.offset = 0x3d8,						.name="SDC3_CLK"	},
+	{ .clk_id = SDC4_CLK,		.glbl = GLBL_CLK_ENA, 	.idx = 28, 	.offset = 0x3e0,						.name="SDC4_CLK"	},
+	{ .clk_id = UART1DM_CLK,	.glbl = GLBL_CLK_ENA, 	.idx = 17, 	.offset = 0x124,						.name="UART1DM_CLK"	},
+	{ .clk_id = UART2DM_CLK,	.glbl = GLBL_CLK_ENA, 	.idx = 26, 	.offset = 0x12c,						.name="UART2DM_CLK"	},
+	{ .clk_id = USB_HS_CLK,		.glbl = GLBL_CLK_ENA_2,	.idx =  7, 	.offset = 0x3e8,	.ns_only = 0xb41, 	.name="USB_HS_CLK"	},
+	{ .clk_id = GRP_CLK,		.glbl = GLBL_CLK_ENA, 	.idx =  3, 	.offset = 0x084, 	.ns_only = 0xa80, 	.name="GRP_CLK"		}, 
+	{ .clk_id = IMEM_CLK,		.glbl = GLBL_CLK_ENA, 	.idx =  3, 	.offset = 0x084, 	.ns_only = 0xa80, 	.name="IMEM_CLK"	},
+	{ .clk_id = VFE_CLK,		.glbl = GLBL_CLK_ENA, 	.idx =  2, 	.offset = 0x040, 						.name="VFE_CLK"		},
+	{ .clk_id = MDP_CLK,		.glbl = GLBL_CLK_ENA, 	.idx =  9, 											.name="MDP_CLK"		},
+	{ .clk_id = GP_CLK,			.glbl = GLBL_CLK_ENA, 				.offset = 0x058, 	.ns_only = 0x800, 	.name="GP_CLK"		},
+	{ .clk_id = PMDH_CLK,		.glbl = GLBL_CLK_ENA_2, .idx =  4, 	.offset = 0x08c, 	.ns_only = 0x00c, 	.name="PMDH_CLK"	},
+	{ .clk_id = I2C_CLK,											.offset = 0x064, 	.ns_only = 0xa00, 	.name="I2C_CLK"		},
+	{ .clk_id = SPI_CLK,		.glbl = GLBL_CLK_ENA_2, .idx = 13, 	.offset = 0x14c, 	.ns_only = 0xa08, 	.name="SPI_CLK"		}
 };
 
-static struct fixed_clk pxo_clk = {
-	.rate = 27000000,
-	.c = {
-		.dbg_name = "pxo_clk",
-		.ops = &clk_ops_xo,
-	},
+#define MSM_CLOCK_REG(frequency,M,N,D,PRE,a5,SRC,MNE,pll_frequency) { \
+	.freq = (frequency), \
+	.md = ((0xffff & (M)) << 16) | (0xffff & ~((D) << 1)), \
+	.ns = ((0xffff & ~((N) - (M))) << 16) \
+	    | ((0xff & (0xa | (MNE))) << 8) \
+	    | ((0x7 & (a5)) << 5) \
+	    | ((0x3 & (PRE)) << 3) \
+	    | (0x7 & (SRC)), \
+	.pll_freq = (pll_frequency), \
+	.calc_freq = 1000*((pll_frequency/1000)*M/((PRE+1)*N)), \
+}
+
+struct mdns_clock_params msm_clock_freq_parameters[] = {
+	MSM_CLOCK_REG(  144000,   3, 0x64, 0x32, 3, 3, 0, 1, 19200000),  /* SD, 144kHz */
+	MSM_CLOCK_REG(  400000,   1, 0x30, 0x15, 0, 3, 0, 1, 19200000),  /* SD, 400kHz */
+	MSM_CLOCK_REG( 7372800,   3, 0x64, 0x32, 0, 2, 4, 1, 245760000), /* 460800*16, will be divided by 4 for 115200 */
+	MSM_CLOCK_REG(12000000,   1, 0x20, 0x10, 1, 3, 1, 1, 768000000), /* SD, 12MHz */
+	MSM_CLOCK_REG(14745600,   3, 0x32, 0x19, 0, 2, 4, 1, 245760000), /* BT, 921600 (*16)*/
+	MSM_CLOCK_REG(19200000,   1, 0x0a, 0x05, 3, 3, 1, 1, 768000000), /* SD, 19.2MHz */
+	MSM_CLOCK_REG(24000000,   1, 0x10, 0x08, 1, 3, 1, 1, 768000000), /* SD, 24MHz */
+	MSM_CLOCK_REG(24576000,   1, 0x0a, 0x05, 0, 2, 4, 1, 245760000), /* SD, 24,576000MHz */
+	MSM_CLOCK_REG(25000000,  14, 0xd7, 0x6b, 1, 3, 1, 1, 768000000), /* SD, 25MHz */
+	MSM_CLOCK_REG(32000000,   1, 0x0c, 0x06, 1, 3, 1, 1, 768000000), /* SD, 32MHz */
+	MSM_CLOCK_REG(48000000,   1, 0x08, 0x04, 1, 3, 1, 1, 768000000), /* SD, 48MHz */
+	MSM_CLOCK_REG(50000000,  25, 0xc0, 0x60, 1, 3, 1, 1, 768000000), /* SD, 50MHz */
+	MSM_CLOCK_REG(58982400,   6, 0x19, 0x0c, 0, 2, 4, 1, 245760000), /* BT, 3686400 (*16) */
+	MSM_CLOCK_REG(64000000,0x19, 0x60, 0x30, 0, 2, 4, 1, 245760000), /* BT, 4000000 (*16) */
 };
 
-/*
-static struct fixed_clk cxo_clk = {
-	.rate = 19200000,
-	.c = {
-		.dbg_name = "cxo_clk",
-		.ops = &clk_ops_xo,
-	},
-};
-*/
-
-
-/*
-* PLL Clocks
-*/
-struct clk_ops clk_ops_pll_vote = {
-	.enable = pll_vote_clk_enable,
-	.disable = pll_vote_clk_disable,
-	.is_enabled = pll_vote_clk_is_enabled,
-	.get_rate = pll_vote_clk_get_rate,
-	.get_parent = pll_vote_clk_get_parent,
-};
-
-struct clk_ops clk_ops_pll = {
-	.enable = pll_clk_enable,
-	.disable = pll_clk_disable,
-	.get_rate = pll_clk_get_rate,
-	.get_parent = pll_clk_get_parent,
-};
-
-static struct pll_clk pll2_clk = {
-	.rate = 800000000,
-	.mode_reg = (void *)MM_PLL1_MODE_REG,
-	.parent = &pxo_clk.c,
-	.c = {
-		.dbg_name = "pll2_clk",
-		.ops = &clk_ops_pll,
-	},
-};
-
-static struct pll_clk pll3_clk = {
-	.rate = 1200000000,
-	.mode_reg = (void *)BB_PLL3_MODE_REG,
-	.parent = &pxo_clk.c,
-	.c = {
-		.dbg_name = "pll3_clk",
-		.ops = &clk_ops_pll,
-	},
-};
-
-static struct pll_vote_clk pll8_clk = {
-	.rate = 384000000,
-	.en_reg = (void *)BB_PLL_ENA_SC0_REG,
-	.en_mask = BIT(8),
-	.status_reg = (void *)BB_PLL8_STATUS_REG,
-	.status_mask = BIT(16),
-	.parent = &pxo_clk.c,
-	.c = {
-		.dbg_name = "pll8_clk",
-		.ops = &clk_ops_pll_vote,
-	},
-};
-
-static struct clk_ops soc_clk_ops_8960 = {
-	.enable = local_clk_enable,
-	.disable = local_clk_disable,
-	.set_rate = local_clk_set_rate,
-	.get_rate = local_clk_get_rate,
-	.is_enabled = local_clk_is_enabled,
-	.round_rate = local_clk_round_rate,
-	.get_parent = local_clk_get_parent,
-};
-
-static struct clk_ops clk_ops_branch = {
-	.enable = branch_clk_enable,
-	.disable = branch_clk_disable,
-	.is_enabled = branch_clk_is_enabled,
-	.get_parent = branch_clk_get_parent,
-	.set_parent = branch_clk_set_parent,
-};
-
-/*
-* Peripheral Clocks
-*/
-#define CLK_GSBI_UART(i, n, h_r, h_b) \
-	struct rcg_clk i##_clk = { \
-		.b = { \
-			.ctl_reg = (void *)GSBIn_UART_APPS_NS_REG(n), \
-			.en_mask = BIT(9), \
-			.reset_reg = (void *)GSBIn_RESET_REG(n), \
-			.reset_mask = BIT(0), \
-			.halt_reg = (void *)h_r, \
-			.halt_bit = h_b, \
-			}, \
-		.ns_reg = (void *)GSBIn_UART_APPS_NS_REG(n), \
-		.md_reg = (void *)GSBIn_UART_APPS_MD_REG(n), \
-		.root_en_mask = BIT(11), \
-		.ns_mask = (BM(31, 16) | BM(6, 0)), \
-		.set_rate = set_rate_mnd, \
-		.freq_tbl = clk_tbl_gsbi_uart, \
-		.current_freq = &local_dummy_freq, \
-		.c = { \
-			.dbg_name = #i "_clk", \
-			.ops = &soc_clk_ops_8960, \
-			}, \
+static void set_grp_clk( int on )
+{
+	if ( on != 0 ) {
+		//axi_reset
+		writel(readl(MSM_CLK_CTL_BASE+0x208) |0x20,          MSM_CLK_CTL_BASE+0x208); //AXI_RESET
+		//row_reset
+		writel(readl(MSM_CLK_CTL_BASE+0x214) |0x20000,       MSM_CLK_CTL_BASE+0x214); //ROW_RESET
+		//vdd_grp gfs_ctl
+		writel(                              0x11f,          MSM_CLK_CTL_BASE+0x284); //VDD_GRP_GFS_CTL
+		// very rough delay
+		//mdelay(20);//deleted
+		//grp NS
+		writel(readl(MSM_CLK_CTL_BASE+0x84)  |0x800,         MSM_CLK_CTL_BASE+0x84); //GRP_NS_REG
+		writel(readl(MSM_CLK_CTL_BASE+0x84)  |0x80,          MSM_CLK_CTL_BASE+0x84); //GRP_NS_REG
+		writel(readl(MSM_CLK_CTL_BASE+0x84)  |0x200,         MSM_CLK_CTL_BASE+0x84); //GRP_NS_REG
+		//grp idx
+		writel(readl(MSM_CLK_CTL_BASE)       |0x8,           MSM_CLK_CTL_BASE);
+		//grp clk ramp
+		writel(readl(MSM_CLK_CTL_BASE+0x290) &(~(0x4)),      MSM_CLK_CTL_BASE+0x290); //MSM_RAIL_CLAMP_IO
+		//Suppress bit 0 of grp MD (?!?)
+		writel(readl(MSM_CLK_CTL_BASE+0x80)  &(~(0x1)),      MSM_CLK_CTL_BASE+0x80);  //PRPH_WEB_NS_REG
+		//axi_reset
+		writel(readl(MSM_CLK_CTL_BASE+0x208) &(~(0x20)),     MSM_CLK_CTL_BASE+0x208); //AXI_RESET
+		//row_reset
+		writel(readl(MSM_CLK_CTL_BASE+0x218) &(~(0x20000)),  MSM_CLK_CTL_BASE+0x218); //ROW_RESET
+	} else {
+		//grp NS
+		writel(readl(MSM_CLK_CTL_BASE+0x84)  |0x800,         MSM_CLK_CTL_BASE+0x84); //GRP_NS_REG
+		writel(readl(MSM_CLK_CTL_BASE+0x84)  |0x80,          MSM_CLK_CTL_BASE+0x84); //GRP_NS_REG
+		writel(readl(MSM_CLK_CTL_BASE+0x84)  |0x200,         MSM_CLK_CTL_BASE+0x84); //GRP_NS_REG
+		//grp idx
+		writel(readl(MSM_CLK_CTL_BASE)       |0x8,           MSM_CLK_CTL_BASE);
+		//grp MD
+		writel(readl(MSM_CLK_CTL_BASE+0x80)  |0x1,      	 MSM_CLK_CTL_BASE+0x80); //PRPH_WEB_NS_REG
+		int i = 0;
+		int status = 0;
+		while ( status == 0 && i < 100) {
+			i++;
+			status = readl(MSM_CLK_CTL_BASE+0x84) & 0x1;			
 		}
-#define F_GSBI_UART(f, s, d, m, n) \
-		{ \
-		.freq_hz = f, \
-		.src_clk = &s##_clk.c, \
-		.md_val = MD16(m, n), \
-		.ns_val = NS(31, 16, n, m, 5, 4, 3, d, 2, 0, s##_to_bb_mux), \
-		.mnd_en_mask = BIT(8) * !!(n), \
+		//axi_reset
+		writel(readl(MSM_CLK_CTL_BASE+0x208) |0x20,     	MSM_CLK_CTL_BASE+0x208); //AXI_RESET
+		//row_reset
+		writel(readl(MSM_CLK_CTL_BASE+0x218) |0x20000,  	MSM_CLK_CTL_BASE+0x218); //ROW_RESET
+		//grp NS
+		writel(readl(MSM_CLK_CTL_BASE+0x84)  &(~(0x800)),   MSM_CLK_CTL_BASE+0x84);  //GRP_NS_REG
+		writel(readl(MSM_CLK_CTL_BASE+0x84)  &(~(0x80)),    MSM_CLK_CTL_BASE+0x84);  //GRP_NS_REG
+		writel(readl(MSM_CLK_CTL_BASE+0x84)  &(~(0x200)),   MSM_CLK_CTL_BASE+0x84);  //GRP_NS_REG
+		//grp clk ramp
+		writel(readl(MSM_CLK_CTL_BASE+0x290) |0x4,      	MSM_CLK_CTL_BASE+0x290); //MSM_RAIL_CLAMP_IO
+		writel(                              0x11f,         MSM_CLK_CTL_BASE+0x284); //VDD_GRP_GFS_CTL
+		int control = readl(MSM_CLK_CTL_BASE+0x288); 								 //VDD_VDC_GFS_CTL
+		if ( control & 0x100 )
+			writel(readl(MSM_CLK_CTL_BASE) &(~(0x8)),      	MSM_CLK_CTL_BASE);
+	}
+}
+
+static inline struct msm_clock_params msm_clk_get_params(UINT32 id)
+{
+	struct msm_clock_params empty = { .clk_id = 0xdeadbeef, .glbl = 0, .idx = 0, .offset = 0, .ns_only = 0, .name="deafbeef"};
+	for (UINT32 i = 0; i < ARRAY_SIZE(msm_clock_parameters); i++) {
+		if (id == msm_clock_parameters[i].clk_id) {
+			return msm_clock_parameters[i];
 		}
-static struct clk_freq_tbl clk_tbl_gsbi_uart[] = {
-	F_GSBI_UART( 1843200U, pll8, 1U,  3U, 625U),
-	F_GSBI_UART( 3686400U, pll8, 1U,  6U, 625U),
-	F_GSBI_UART( 7372800U, pll8, 1U, 12U, 625U),
-	F_GSBI_UART(14745600U, pll8, 1U, 24U, 625U),
-	F_GSBI_UART(16000000U, pll8, 4U,  1U,   6U),
-	F_GSBI_UART(24000000U, pll8, 4U,  1U,   4U),
-	F_GSBI_UART(32000000U, pll8, 4U,  1U,   3U),
-	F_GSBI_UART(40000000U, pll8, 1U,  5U,  48U),
-	F_GSBI_UART(46400000U, pll8, 1U, 29U, 240U),
-	F_GSBI_UART(48000000U, pll8, 4U,  1U,   2U),
-	F_GSBI_UART(51200000U, pll8, 1U,  2U,  15U),
-	F_GSBI_UART(56000000U, pll8, 1U,  7U,  48U),
-	F_GSBI_UART(58982400U, pll8, 1U, 96U, 625U),
-	F_GSBI_UART(64000000U, pll8, 2U,  1U,   3U),
-	F_END
-};
-
-static CLK_GSBI_UART(gsbi1_uart, 1, CLK_HALT_CFPB_STATEA_REG, 10);
-static CLK_GSBI_UART(gsbi2_uart, 2, CLK_HALT_CFPB_STATEA_REG, 6);
-static CLK_GSBI_UART(gsbi3_uart, 3, CLK_HALT_CFPB_STATEA_REG, 2);
-static CLK_GSBI_UART(gsbi4_uart, 4, CLK_HALT_CFPB_STATEB_REG, 26);
-static CLK_GSBI_UART(gsbi5_uart, 5, CLK_HALT_CFPB_STATEB_REG, 22);
-static CLK_GSBI_UART(gsbi6_uart, 6, CLK_HALT_CFPB_STATEB_REG, 18);
-static CLK_GSBI_UART(gsbi7_uart, 7, CLK_HALT_CFPB_STATEB_REG, 14);
-static CLK_GSBI_UART(gsbi8_uart, 8, CLK_HALT_CFPB_STATEB_REG, 10);
-static CLK_GSBI_UART(gsbi9_uart, 9, CLK_HALT_CFPB_STATEB_REG, 6);
-static CLK_GSBI_UART(gsbi10_uart, 10, CLK_HALT_CFPB_STATEB_REG, 2);
-static CLK_GSBI_UART(gsbi11_uart, 11, CLK_HALT_CFPB_STATEC_REG, 17);
-static CLK_GSBI_UART(gsbi12_uart, 12, CLK_HALT_CFPB_STATEC_REG, 13);
-
-#define CLK_GSBI_QUP(i, n, h_r, h_b) \
-	struct rcg_clk i##_clk = { \
-		.b = { \
-			.ctl_reg = (void *)GSBIn_QUP_APPS_NS_REG(n), \
-			.en_mask = BIT(9), \
-			.reset_reg = (void *)GSBIn_RESET_REG(n), \
-			.reset_mask = BIT(0), \
-			.halt_reg = (void *)h_r, \
-			.halt_bit = h_b, \
-		}, \
-		.ns_reg = (void *)GSBIn_QUP_APPS_NS_REG(n), \
-		.md_reg = (void *)GSBIn_QUP_APPS_MD_REG(n), \
-		.root_en_mask = BIT(11), \
-		.ns_mask = (BM(23, 16) | BM(6, 0)), \
-		.set_rate = set_rate_mnd, \
-		.freq_tbl = clk_tbl_gsbi_qup, \
-		.current_freq = &local_dummy_freq, \
-		.c = { \
-			.dbg_name = #i "_clk", \
-			.ops = &soc_clk_ops_8960, \
-		}, \
 	}
-#define F_GSBI_QUP(f, s, d, m, n) \
-	{ \
-		.freq_hz = f, \
-		.src_clk = &s##_clk.c, \
-		.md_val = MD8(16, m, 0, n), \
-		.ns_val = NS(23, 16, n, m, 5, 4, 3, d, 2, 0, s##_to_bb_mux), \
-		.mnd_en_mask = BIT(8) * !!(n), \
-	}
-static struct clk_freq_tbl clk_tbl_gsbi_qup[] = {
-	F_GSBI_QUP( 1100000U, pxo,  1U, 2U, 49U),
-	F_GSBI_QUP( 5400000U, pxo,  1U, 1U,  5U),
-	F_GSBI_QUP(10800000U, pxo,  1U, 2U,  5U),
-	F_GSBI_QUP(15060000U, pll8, 1U, 2U, 51U),
-	F_GSBI_QUP(24000000U, pll8, 4U, 1U,  4U),
-	F_GSBI_QUP(25600000U, pll8, 1U, 1U, 15U),
-	F_GSBI_QUP(27000000U, pxo,  1U, 0U,  0U),
-	F_GSBI_QUP(48000000U, pll8, 4U, 1U,  2U),
-	F_GSBI_QUP(51200000U, pll8, 1U, 2U, 15U),
-	F_END
-};
-
-static CLK_GSBI_QUP(gsbi1_qup, 1, CLK_HALT_CFPB_STATEA_REG, 9);
-static CLK_GSBI_QUP(gsbi2_qup, 2, CLK_HALT_CFPB_STATEA_REG, 4);
-static CLK_GSBI_QUP(gsbi3_qup, 3, CLK_HALT_CFPB_STATEA_REG, 0);
-static CLK_GSBI_QUP(gsbi4_qup, 4, CLK_HALT_CFPB_STATEB_REG, 24);
-static CLK_GSBI_QUP(gsbi5_qup, 5, CLK_HALT_CFPB_STATEB_REG, 20);
-static CLK_GSBI_QUP(gsbi6_qup, 6, CLK_HALT_CFPB_STATEB_REG, 16);
-static CLK_GSBI_QUP(gsbi7_qup, 7, CLK_HALT_CFPB_STATEB_REG, 12);
-static CLK_GSBI_QUP(gsbi8_qup, 8, CLK_HALT_CFPB_STATEB_REG, 8);
-static CLK_GSBI_QUP(gsbi9_qup, 9, CLK_HALT_CFPB_STATEB_REG, 4);
-static CLK_GSBI_QUP(gsbi10_qup, 10, CLK_HALT_CFPB_STATEB_REG, 0);
-static CLK_GSBI_QUP(gsbi11_qup, 11, CLK_HALT_CFPB_STATEC_REG, 15);
-static CLK_GSBI_QUP(gsbi12_qup, 12, CLK_HALT_CFPB_STATEC_REG, 11);
-
-#define F_USB(f, s, d, m, n) \
-	{ \
-		.freq_hz = f, \
-		.src_clk = &s##_clk.c, \
-		.md_val = MD8(16, m, 0, n), \
-		.ns_val = NS(23, 16, n, m, 5, 4, 3, d, 2, 0, s##_to_bb_mux), \
-		.mnd_en_mask = BIT(8) * !!(n), \
-	}
-static struct clk_freq_tbl clk_tbl_usb[] = {
-	F_USB(60000000U, pll8, 1U, 5U, 32U),
-	F_END
-};
-
-static struct rcg_clk usb_hs1_xcvr_clk = {
-	.b = {
-		.ctl_reg = (void *)USB_HS1_XCVR_FS_CLK_NS_REG,
-		.en_mask = BIT(9),
-		.reset_reg = (void *)USB_HS1_RESET_REG,
-		.reset_mask = BIT(0),
-		.halt_reg = (void *)CLK_HALT_DFAB_STATE_REG,
-		.halt_bit = 0,
-	},
-	.ns_reg = (void *)USB_HS1_XCVR_FS_CLK_NS_REG,
-	.md_reg = (void *)USB_HS1_XCVR_FS_CLK_MD_REG,
-	.root_en_mask = BIT(11),
-	.ns_mask = (BM(23, 16) | BM(6, 0)),
-	.set_rate = set_rate_mnd,
-	.freq_tbl = clk_tbl_usb,
-	.current_freq = &local_dummy_freq,
-	.c = {
-			.dbg_name = "usb_hs1_xcvr_clk",
-			.ops = &soc_clk_ops_8960,
-		},
-};
-
-#define CLK_SDC(i, n, h_r, h_c, h_b) \
-	struct rcg_clk i##_clk = { \
-		.b = { \
-			.ctl_reg = (void *)SDCn_APPS_CLK_NS_REG(n), \
-			.en_mask = BIT(9), \
-			.reset_reg = (void *)SDCn_RESET_REG(n), \
-			.reset_mask = BIT(0), \
-			.halt_reg = (void *)h_r, \
-			.halt_check = h_c, \
-			.halt_bit = h_b, \
-					}, \
-		.ns_reg = (void *)SDCn_APPS_CLK_NS_REG(n), \
-		.md_reg = (void *)SDCn_APPS_CLK_MD_REG(n), \
-		.root_en_mask = BIT(11), \
-		.ns_mask = (BM(23, 16) | BM(6, 0)), \
-		.set_rate = set_rate_mnd, \
-		.freq_tbl = clk_tbl_sdc, \
-		.current_freq = &local_dummy_freq, \
-		.c = { \
-			.dbg_name = #i "_clk", \
-			.ops = &soc_clk_ops_8960, \
-					}, \
-				}
-#define F_SDC(f, s, d, m, n) \
-				{ \
-		.freq_hz = f, \
-		.src_clk = &s##_clk.c, \
-		.md_val = MD8(16, m, 0, n), \
-		.ns_val = NS(23, 16, n, m, 5, 4, 3, d, 2, 0, s##_to_bb_mux), \
-		.mnd_en_mask = BIT(8) * !!(n), \
-				}
-static struct clk_freq_tbl clk_tbl_sdc[] = {
-	F_SDC(   144000U, pxo,  3U, 2U, 125U),
-	F_SDC(   400000U, pll8, 4U, 1U, 240U),
-	F_SDC( 16000000U, pll8, 4U, 1U,   6U),
-	F_SDC( 17070000U, pll8, 1U, 2U,  45U),
-	F_SDC( 20210000U, pll8, 1U, 1U,  19U),
-	F_SDC( 24000000U, pll8, 4U, 1U,   4U),
-	F_SDC( 48000000U, pll8, 4U, 1U,   2U),
-	F_SDC( 64000000U, pll8, 3U, 1U,   2U),
-	F_SDC( 96000000U, pll8, 4U, 0U,   0U),
-	F_SDC(192000000U, pll8, 2U, 0U,   0U),
-	F_END
-};
-
-static CLK_SDC(sdc1, 1, CLK_HALT_DFAB_STATE_REG, HALT, 6);
-static CLK_SDC(sdc2, 2, CLK_HALT_DFAB_STATE_REG, HALT, 5);
-static CLK_SDC(sdc3, 3, CLK_HALT_DFAB_STATE_REG, HALT, 4);
-static CLK_SDC(sdc4, 4, CLK_HALT_DFAB_STATE_REG, HALT, 3);
-static CLK_SDC(sdc5, 5, CLK_HALT_DFAB_STATE_REG, HALT, 2);
-
-static struct branch_clk ce1_core_clk = {
-	.b = {
-		.ctl_reg = (void *)CE1_CORE_CLK_CTL_REG,
-		.en_mask = BIT(4),
-		.halt_reg = (void *)CLK_HALT_CFPB_STATEC_REG,
-		.halt_bit = 27,
-	},
-	.c = {
-			.dbg_name = "ce1_core_clk",
-			.ops = &clk_ops_branch,
-		},
-};
-static struct branch_clk ce1_p_clk = {
-	.b = {
-		.ctl_reg = (void *)CE1_HCLK_CTL_REG,
-		.en_mask = BIT(4),
-		.halt_reg = (void *)CLK_HALT_CFPB_STATEC_REG,
-		.halt_bit = 1,
-	},
-	.c = {
-			.dbg_name = "ce1_p_clk",
-			.ops = &clk_ops_branch,
-		},
-};
-
-#define F_CE(f, s, d) \
-	{ \
-		.freq_hz = f, \
-		.src_clk = &s##_clk.c, \
-		.ns_val = NS_DIVSRC(6, 3, d, 2, 0, s##_to_bb_mux), \
-	}
-static struct clk_freq_tbl clk_tbl_ce3[] = {
-	F_CE( 48000000U, pll8,  8U),
-	F_CE(100000000U, pll3, 12U),
-	F_END
-};
-
-static struct rcg_clk ce3_src_clk = {
-	.b = {
-		.ctl_reg = (void *)CE3_CLK_SRC_NS_REG,
-		.en_mask = 0,
-		.halt_check = NOCHECK,
-	},
-	.ns_reg = (void *)CE3_CLK_SRC_NS_REG,
-	.root_en_mask = BIT(7),
-	.ns_mask = BM(6, 0),
-	.set_rate = set_rate_nop,
-	.freq_tbl = clk_tbl_ce3,
-	.current_freq = &local_dummy_freq,
-	.c = {
-			.dbg_name = "ce3_src_clk",
-			.ops = &soc_clk_ops_8960,
-		},
-};
-
-static struct branch_clk ce3_core_clk = {
-	.b = {
-		.ctl_reg = (void *)CE3_CORE_CLK_CTL_REG,
-		.en_mask = BIT(4),
-		.halt_reg = (void *)CLK_HALT_GSS_KPSS_MISC_STATE_REG,
-		.halt_bit = 5,
-	},
-	.parent = &ce3_src_clk.c,
-	.c = {
-			.dbg_name = "ce3_core_clk",
-			.ops = &clk_ops_branch,
-		},
-};
-
-static struct branch_clk ce3_p_clk = {
-	.b = {
-		.ctl_reg = (void *)CE3_HCLK_CTL_REG,
-		.en_mask = BIT(4),
-		.halt_reg = (void *)CLK_HALT_AFAB_SFAB_STATEB_REG,
-		.halt_bit = 16,
-	},
-	.parent = &ce3_src_clk.c,
-	.c = {
-			.dbg_name = "ce3_p_clk",
-			.ops = &clk_ops_branch,
-		},
-};
-
-static struct branch_clk gsbi1_p_clk = {
-	.b = {
-		.ctl_reg = (void *)GSBIn_HCLK_CTL_REG(1),
-		.en_mask = BIT(4),
-		.halt_reg = (void *)CLK_HALT_CFPB_STATEA_REG,
-		.halt_bit = 11,
-	},
-	.c = {
-			.dbg_name = "gsbi1_p_clk",
-			.ops = &clk_ops_branch,
-		},
-};
-
-static struct branch_clk gsbi2_p_clk = {
-	.b = {
-		.ctl_reg = (void *)GSBIn_HCLK_CTL_REG(2),
-		.en_mask = BIT(4),
-		.halt_reg = (void *)CLK_HALT_CFPB_STATEA_REG,
-		.halt_bit = 7,
-	},
-	.c = {
-			.dbg_name = "gsbi2_p_clk",
-			.ops = &clk_ops_branch,
-		},
-};
-
-static struct branch_clk gsbi3_p_clk = {
-	.b = {
-		.ctl_reg = (void *)GSBIn_HCLK_CTL_REG(3),
-		.en_mask = BIT(4),
-		.halt_reg = (void *)CLK_HALT_CFPB_STATEA_REG,
-		.halt_bit = 3,
-	},
-	.c = {
-			.dbg_name = "gsbi3_p_clk",
-			.ops = &clk_ops_branch,
-		},
-};
-
-static struct branch_clk gsbi4_p_clk = {
-	.b = {
-		.ctl_reg = (void *)GSBIn_HCLK_CTL_REG(4),
-		.en_mask = BIT(4),
-		.halt_reg = (void *)CLK_HALT_CFPB_STATEB_REG,
-		.halt_bit = 27,
-	},
-	.c = {
-			.dbg_name = "gsbi4_p_clk",
-			.ops = &clk_ops_branch,
-		},
-};
-
-static struct branch_clk gsbi5_p_clk = {
-	.b = {
-		.ctl_reg = (void *)GSBIn_HCLK_CTL_REG(5),
-		.en_mask = BIT(4),
-		.halt_reg = (void *)CLK_HALT_CFPB_STATEB_REG,
-		.halt_bit = 23,
-	},
-	.c = {
-			.dbg_name = "gsbi5_p_clk",
-			.ops = &clk_ops_branch,
-		},
-};
-
-static struct branch_clk gsbi6_p_clk = {
-	.b = {
-		.ctl_reg = (void *)GSBIn_HCLK_CTL_REG(6),
-		.en_mask = BIT(4),
-		.halt_reg = (void *)CLK_HALT_CFPB_STATEB_REG,
-		.halt_bit = 19,
-	},
-	.c = {
-			.dbg_name = "gsbi6_p_clk",
-			.ops = &clk_ops_branch,
-		},
-};
-
-static struct branch_clk gsbi7_p_clk = {
-	.b = {
-		.ctl_reg = (void *)GSBIn_HCLK_CTL_REG(7),
-		.en_mask = BIT(4),
-		.halt_reg = (void *)CLK_HALT_CFPB_STATEB_REG,
-		.halt_bit = 15,
-	},
-	.c = {
-			.dbg_name = "gsbi7_p_clk",
-			.ops = &clk_ops_branch,
-		},
-};
-
-static struct branch_clk gsbi8_p_clk = {
-	.b = {
-		.ctl_reg = (void *)GSBIn_HCLK_CTL_REG(8),
-		.en_mask = BIT(4),
-		.halt_reg = (void *)CLK_HALT_CFPB_STATEB_REG,
-		.halt_bit = 11,
-	},
-	.c = {
-			.dbg_name = "gsbi8_p_clk",
-			.ops = &clk_ops_branch,
-		},
-};
-
-static struct branch_clk gsbi9_p_clk = {
-	.b = {
-		.ctl_reg = (void *)GSBIn_HCLK_CTL_REG(9),
-		.en_mask = BIT(4),
-		.halt_reg = (void *)CLK_HALT_CFPB_STATEB_REG,
-		.halt_bit = 7,
-	},
-	.c = {
-			.dbg_name = "gsbi9_p_clk",
-			.ops = &clk_ops_branch,
-		},
-};
-
-static struct branch_clk gsbi10_p_clk = {
-	.b = {
-		.ctl_reg = (void *)GSBIn_HCLK_CTL_REG(10),
-		.en_mask = BIT(4),
-		.halt_reg = (void *)CLK_HALT_CFPB_STATEB_REG,
-		.halt_bit = 3,
-	},
-	.c = {
-			.dbg_name = "gsbi10_p_clk",
-			.ops = &clk_ops_branch,
-		},
-};
-
-static struct branch_clk gsbi11_p_clk = {
-	.b = {
-		.ctl_reg = (void *)GSBIn_HCLK_CTL_REG(11),
-		.en_mask = BIT(4),
-		.halt_reg = (void *)CLK_HALT_CFPB_STATEC_REG,
-		.halt_bit = 18,
-	},
-	.c = {
-			.dbg_name = "gsbi11_p_clk",
-			.ops = &clk_ops_branch,
-		},
-};
-
-static struct branch_clk gsbi12_p_clk = {
-	.b = {
-		.ctl_reg = (void *)GSBIn_HCLK_CTL_REG(12),
-		.en_mask = BIT(4),
-		.halt_reg = (void *)CLK_HALT_CFPB_STATEC_REG,
-		.halt_bit = 14,
-	},
-	.c = {
-			.dbg_name = "gsbi12_p_clk",
-			.ops = &clk_ops_branch,
-		},
-};
-
-static struct branch_clk mdp_axi_clk = {
-	.b = {
-		.ctl_reg = (void *)MAXI_EN_REG,
-		.en_mask = BIT(23),
-		.reset_reg = (void *)SW_RESET_AXI_REG,
-		.reset_mask = BIT(13),
-		.halt_reg = (void *)DBG_BUS_VEC_E_REG,
-		.halt_bit = 8,
-	},
-	.c = {
-			.dbg_name = "mdp_axi_clk",
-			.ops = &clk_ops_branch,
-		},
-};
-
-#define F_MDP(f, s, m, n) \
-	{ \
-		.freq_hz = f, \
-		.src_clk = &s##_clk.c, \
-		.md_val = MD8(8, m, 0, n), \
-		.ns_val = NS_MND_BANKED8(22, 14, n, m, 3, 0, s##_to_mm_mux), \
-		.ctl_val = CC_BANKED(9, 6, n), \
-		.mnd_en_mask = (BIT(8) | BIT(5)) * !!(n), \
-	}
-static struct clk_freq_tbl clk_tbl_mdp[] = {
-	F_MDP(  9600000U, pll8, 1U, 40U),
-	F_MDP( 13710000U, pll8, 1U, 28U),
-	F_MDP( 27000000U, pxo,  0U,  0U),
-	F_MDP( 29540000U, pll8, 1U, 13U),
-	F_MDP( 34910000U, pll8, 1U, 11U),
-	F_MDP( 38400000U, pll8, 1U, 10U),
-	F_MDP( 59080000U, pll8, 2U, 13U),
-	F_MDP( 76800000U, pll8, 1U,  5U),
-	F_MDP( 85330000U, pll8, 2U,  9U),
-	F_MDP( 96000000U, pll8, 1U,  4U),
-	F_MDP(128000000U, pll8, 1U,  3U),
-	F_MDP(160000000U, pll2, 1U,  5U),
-	F_MDP(177780000U, pll2, 2U,  9U),
-	F_MDP(200000000U, pll2, 1U,  4U),
-	F_END
-};
-
-static struct bank_masks bmnd_info_mdp = {
-	.bank_sel_mask = BIT(11),
-	.bank0_mask = {
-		.md_reg = (void *)MDP_MD0_REG,
-		.ns_mask = BM(29, 22) | BM(5, 3),
-		.rst_mask = BIT(31),
-		.mnd_en_mask = BIT(8),
-		.mode_mask = BM(10, 9),
-	},
-	.bank1_mask = {
-			.md_reg = (void *)MDP_MD1_REG,
-			.ns_mask = BM(21, 14) | BM(2, 0),
-			.rst_mask = BIT(30),
-			.mnd_en_mask = BIT(5),
-			.mode_mask = BM(7, 6),
-		},
-};
-
-static struct rcg_clk mdp_clk = {
-	.b = {
-		.ctl_reg = (void *)MDP_CC_REG,
-		.en_mask = BIT(0),
-		.reset_reg = (void *)SW_RESET_CORE_REG,
-		.reset_mask = BIT(21),
-		.halt_reg = (void *)DBG_BUS_VEC_C_REG,
-		.halt_bit = 10,
-	},
-	.ns_reg = (void *)MDP_NS_REG,
-	.root_en_mask = BIT(2),
-	.set_rate = set_rate_mnd_banked,
-	.freq_tbl = clk_tbl_mdp,
-	.bank_masks = &bmnd_info_mdp,
-	.depends = &mdp_axi_clk.c,
-	.current_freq = &local_dummy_freq,
-	.c = {
-			.dbg_name = "mdp_clk",
-			.ops = &soc_clk_ops_8960,
-		},
-};
-
-static struct branch_clk lut_mdp_clk = {
-	.b = {
-		.ctl_reg = (void *)MDP_LUT_CC_REG,
-		.en_mask = BIT(0),
-		.halt_reg = (void *)DBG_BUS_VEC_I_REG,
-		.halt_bit = 13,
-	},
-	.parent = &mdp_clk.c,
-	.c = {
-			.dbg_name = "lut_mdp_clk",
-			.ops = &clk_ops_branch,
-		},
-};
-
-#ifdef DEBUG_CLOCK
-struct measure_sel {
-	uint32_t test_vector;
-	struct clk *clk;
-};
-
-static struct measure_sel measure_mux[] = {
-		{ TEST_PER_LS(0x13), &sdc1_clk.c },
-		{ TEST_PER_LS(0x15), &sdc2_clk.c },
-		{ TEST_PER_LS(0x17), &sdc3_clk.c },
-		{ TEST_PER_LS(0x19), &sdc4_clk.c },
-		{ TEST_PER_LS(0x1B), &sdc5_clk.c },
-		{ TEST_PER_LS(0x3D), &gsbi1_p_clk.c },
-		{ TEST_PER_LS(0x3E), &gsbi1_uart_clk.c },
-		{ TEST_PER_LS(0x3F), &gsbi1_qup_clk.c },
-		{ TEST_PER_LS(0x41), &gsbi2_p_clk.c },
-		{ TEST_PER_LS(0x42), &gsbi2_uart_clk.c },
-		{ TEST_PER_LS(0x44), &gsbi2_qup_clk.c },
-		{ TEST_PER_LS(0x45), &gsbi3_p_clk.c },
-		{ TEST_PER_LS(0x46), &gsbi3_uart_clk.c },
-		{ TEST_PER_LS(0x48), &gsbi3_qup_clk.c },
-		{ TEST_PER_LS(0x49), &gsbi4_p_clk.c },
-		{ TEST_PER_LS(0x4A), &gsbi4_uart_clk.c },
-		{ TEST_PER_LS(0x4C), &gsbi4_qup_clk.c },
-		{ TEST_PER_LS(0x4D), &gsbi5_p_clk.c },
-		{ TEST_PER_LS(0x4E), &gsbi5_uart_clk.c },
-		{ TEST_PER_LS(0x50), &gsbi5_qup_clk.c },
-		{ TEST_PER_LS(0x51), &gsbi6_p_clk.c },
-		{ TEST_PER_LS(0x52), &gsbi6_uart_clk.c },
-		{ TEST_PER_LS(0x54), &gsbi6_qup_clk.c },
-		{ TEST_PER_LS(0x55), &gsbi7_p_clk.c },
-		{ TEST_PER_LS(0x56), &gsbi7_uart_clk.c },
-		{ TEST_PER_LS(0x58), &gsbi7_qup_clk.c },
-		{ TEST_PER_LS(0x59), &gsbi8_p_clk.c },
-		{ TEST_PER_LS(0x5A), &gsbi8_uart_clk.c },
-		{ TEST_PER_LS(0x5C), &gsbi8_qup_clk.c },
-		{ TEST_PER_LS(0x5D), &gsbi9_p_clk.c },
-		{ TEST_PER_LS(0x5E), &gsbi9_uart_clk.c },
-		{ TEST_PER_LS(0x60), &gsbi9_qup_clk.c },
-		{ TEST_PER_LS(0x61), &gsbi10_p_clk.c },
-		{ TEST_PER_LS(0x62), &gsbi10_uart_clk.c },
-		{ TEST_PER_LS(0x64), &gsbi10_qup_clk.c },
-		{ TEST_PER_LS(0x65), &gsbi11_p_clk.c },
-		{ TEST_PER_LS(0x66), &gsbi11_uart_clk.c },
-		{ TEST_PER_LS(0x68), &gsbi11_qup_clk.c },
-		{ TEST_PER_LS(0x69), &gsbi12_p_clk.c },
-		{ TEST_PER_LS(0x6A), &gsbi12_uart_clk.c },
-		{ TEST_PER_LS(0x6C), &gsbi12_qup_clk.c },
-		{ TEST_PER_LS(0x85), &usb_hs1_xcvr_clk.c },
-		{ TEST_PER_LS(0x92), &ce1_p_clk.c },
-		{ TEST_PER_LS(0xA4), &ce1_core_clk.c },
-		{ TEST_PER_LS(0x5F), &ce3_p_clk.c },
-		{ TEST_PER_LS(0x60), &ce3_core_clk.c },
-
-		{ TEST_MM_HS(0x15), &mdp_axi_clk.c },
-		{ TEST_MM_HS(0x1A), &mdp_clk.c },
-		{ TEST_MM_HS(0x28), &lut_mdp_clk.c },
-};
-
-static struct measure_sel *find_measure_sel(struct clk *clk)
-{
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(measure_mux); i++)
-		if (measure_mux[i].clk == clk)
-			return &measure_mux[i];
-	return NULL;
+	
+	return empty;
 }
 
-static int measure_clk_set_parent(struct clk *c, struct clk *parent)
+static inline UINT32 msm_clk_enable_bit(UINT32 id)
 {
-	int ret = 0;
-	uint32_t clk_sel;
-	struct measure_sel *p;
-	struct measure_clk *clk = to_measure_clk(c);
+	struct msm_clock_params params;
+	params = msm_clk_get_params(id);
+	if (!params.idx) return 0;
+	
+	return 1U << params.idx;
+}
 
-	if (!parent)
-		return ERR_INVALID_ARGS;
+static inline UINT32 msm_clk_get_glbl(UINT32 id)
+{
+	struct msm_clock_params params;
+	params = msm_clk_get_params(id);
+	if (!params.glbl) return 0;
+	
+	return params.glbl;
+}
 
-	p = find_measure_sel(parent);
-	if (!p)
-		return ERR_INVALID_ARGS;
+static inline unsigned msm_clk_reg_offset(UINT32 id)
+{
+	struct msm_clock_params params;
+	params = msm_clk_get_params(id);
+	
+	return params.offset;
+}
 
-	/*
-	* Program the test vector, measurement period (sample_ticks)
-	* and scaling multiplier.
-	*/
-	clk->sample_ticks = 0x10000;
-	clk_sel = p->test_vector & TEST_CLK_SEL_MASK;
-	clk->multiplier = 1;
-	switch (p->test_vector >> TEST_TYPE_SHIFT) {
-	case TEST_TYPE_PER_LS:
-		writel_relaxed(0x4030D00 | BVAL(7, 0, clk_sel), CLK_TEST_REG);
-		break;
-	case TEST_TYPE_PER_HS:
-		writel_relaxed(0x4020000 | BVAL(16, 10, clk_sel), CLK_TEST_REG);
-		break;
-	case TEST_TYPE_MM_LS:
-		writel_relaxed(0x4030D97, CLK_TEST_REG);
-		writel_relaxed(BVAL(6, 1, clk_sel) | BIT(0), DBG_CFG_REG_LS_REG);
-		break;
-	case TEST_TYPE_MM_HS:
-		writel_relaxed(0x402B800, CLK_TEST_REG);
-		writel_relaxed(BVAL(6, 1, clk_sel) | BIT(0), DBG_CFG_REG_HS_REG);
-		break;
-	default:
-		ret = ERR_NOT_SUPPORTED;
+static int set_mdns_host_clock(UINT32 id, unsigned long freq)
+{
+	int n;
+	unsigned offset;
+	int retval __UNUSED;
+	bool found __UNUSED;
+	struct msm_clock_params params;
+	UINT32 nsreg;
+	found = 0;
+	retval = -1;
+	
+	params = msm_clk_get_params(id);
+	offset = params.offset;
+
+	if (!params.offset)
+		return -1;
+
+	// Turn off clock-enable bit if supported
+	if (params.idx > 0 && params.glbl > 0)
+		writel(readl(params.glbl) & ~(1U << params.idx), params.glbl);
+
+	if (params.ns_only > 0)	{
+		nsreg = readl(MSM_CLK_CTL_BASE + offset) & 0xfffff000;
+		writel( nsreg | params.ns_only, MSM_CLK_CTL_BASE + offset);
+		found = 1;
+		retval = 0;
+	} else {
+		for (n = ARRAY_SIZE(msm_clock_freq_parameters)-1; n >= 0; n--) {
+			if (freq >= msm_clock_freq_parameters[n].freq) {
+				// This clock requires MD and NS regs to set frequency:
+				writel(msm_clock_freq_parameters[n].md, MSM_CLK_CTL_BASE + offset - 4);
+				writel(msm_clock_freq_parameters[n].ns, MSM_CLK_CTL_BASE + offset);
+				retval = 0;
+				found = 1;
+				break;
+			}
+		}
 	}
-	/* Make sure test vector is set before starting measurements. */
-	ArmDataMemoryBarrier();
 
-	return ret;
+	// Turn clock-enable bit back on, if supported
+	if (params.idx > 0 && params.glbl > 0)
+		writel(readl(params.glbl) | (1U << params.idx), params.glbl);
+
+    return 0;
 }
 
-/* Sample clock for 'ticks' reference clock ticks. */
-static uint32_t run_measurement(unsigned ticks)
+static unsigned long get_mdns_host_clock(UINT32 id)
 {
-	/* Stop counters and set the XO4 counter start value. */
-	writel_relaxed(ticks, RINGOSC_TCXO_CTL_REG);
+	UINT32 n;
+	UINT32 offset;
+	UINT32 mdreg;
+	UINT32 nsreg;
+	unsigned long freq = 0;
 
-	/* Wait for timer to become ready. */
-	while ((readl_relaxed(RINGOSC_STATUS_REG) & BIT(25)) != 0)
-		ArmDataMemoryBarrier();
+	offset = msm_clk_reg_offset(id);
+	if (offset == 0)
+		return -1;
 
-	/* Run measurement and wait for completion. */
-	writel_relaxed(BIT(20) | ticks, RINGOSC_TCXO_CTL_REG);
-	while ((readl_relaxed(RINGOSC_STATUS_REG) & BIT(25)) == 0)
-		ArmDataMemoryBarrier();
+	mdreg = readl(MSM_CLK_CTL_BASE + offset - 4);
+	nsreg = readl(MSM_CLK_CTL_BASE + offset);
 
-	/* Stop counters. */
-	writel_relaxed(0x0, RINGOSC_TCXO_CTL_REG);
+	for (n = 0; n < ARRAY_SIZE(msm_clock_freq_parameters); n++) {
+		if (msm_clock_freq_parameters[n].md == mdreg &&
+			msm_clock_freq_parameters[n].ns == nsreg) {
+			freq = msm_clock_freq_parameters[n].freq;
+			break;
+		}
+	}
 
-	/* Return measured ticks. */
-	return readl_relaxed(RINGOSC_STATUS_REG) & BM(24, 0);
+	return freq;
 }
 
-
-/* Perform a hardware rate measurement for a given clock.
-FOR DEBUG USE ONLY: Measurements take ~15 ms! */
-static unsigned long measure_clk_get_rate(struct clk *c)
+// Cotullaz "new" clock functions
+static int cotulla_clk_set_rate(UINT32 id, unsigned long rate)
 {
-	uint32_t pdm_reg_backup, ringosc_reg_backup;
-	uint64_t raw_count_short, raw_count_full;
-	struct measure_clk *clk = to_measure_clk(c);
-	unsigned ret;
+    unsigned clk = -1;
+    unsigned speed = 0;
+    switch (id) {
+		case ICODEC_RX_CLK:
+			if (rate > 11289600)     speed = 9;
+			else if (rate > 8192000) speed = 8;
+			else if (rate > 6144000) speed = 7;
+			else if (rate > 5644800) speed = 6;
+			else if (rate > 4096000) speed = 5;
+			else if (rate > 3072000) speed = 4;
+			else if (rate > 2822400) speed = 3;
+			else if (rate > 2048000) speed = 2;
+			else speed = 1;
+			clk = 50;
+			break;
+		case ICODEC_TX_CLK:
+			if (rate > 11289600) 	 speed = 9;
+			else if (rate > 8192000) speed = 8;
+			else if (rate > 6144000) speed = 7;
+			else if (rate > 5644800) speed = 6;
+			else if (rate > 4096000) speed = 5;
+			else if (rate > 3072000) speed = 4;
+			else if (rate > 2822400) speed = 3;
+			else if (rate > 2048000) speed = 2;
+			else speed = 1;
+			clk = 52;
+			break;
+		case SDAC_MCLK:
+			if (rate > 1411200) 	speed = 9;
+			else if (rate > 1024000)speed = 8;
+			else if (rate > 768000) speed = 7;
+			else if (rate > 705600) speed = 6;
+			else if (rate > 512000) speed = 5;
+			else if (rate > 384000) speed = 4;
+			else if (rate > 352800) speed = 3;
+			else if (rate > 256000) speed = 2;
+			else speed = 1;
+			clk = 64;
+			break;
+		case UART1DM_CLK:
+			if (rate > 61440000) 	  speed = 15;
+			else if (rate > 58982400) speed = 14;
+			else if (rate > 56000000) speed = 13;
+			else if (rate > 51200000) speed = 12;
+			else if (rate > 48000000) speed = 11;
+			else if (rate > 40000000) speed = 10;
+			else if (rate > 32000000) speed = 9;
+			else if (rate > 24000000) speed = 8;
+			else if (rate > 16000000) speed = 7;
+			else if (rate > 15360000) speed = 6;
+			else if (rate > 14745600) speed = 5;
+			else if (rate >  7680000) speed = 4;
+			else if (rate >  7372800) speed = 3;
+			else if (rate >  3840000) speed = 2;
+			else speed = 1;
+			clk = 78;
+			break;
+		case UART2DM_CLK:
+			if (rate > 61440000) 	  speed = 15;
+			else if (rate > 58982400) speed = 14;
+			else if (rate > 56000000) speed = 13;
+			else if (rate > 51200000) speed = 12;
+			else if (rate > 48000000) speed = 11;
+			else if (rate > 40000000) speed = 10;
+			else if (rate > 32000000) speed = 9;
+			else if (rate > 24000000) speed = 8;
+			else if (rate > 16000000) speed = 7;
+			else if (rate > 15360000) speed = 6;
+			else if (rate > 14745600) speed = 5;
+			else if (rate >  7680000) speed = 4;
+			else if (rate >  7372800) speed = 3;
+			else if (rate >  3840000) speed = 2;
+			else speed = 1;
+			clk = 80;
+			break;
+		case ECODEC_CLK:
+			if (rate > 2048000) 	speed = 3;
+			else if (rate > 128000) speed = 2;
+			else speed = 1;
+			clk = 42;
+			break;
+		case VFE_MDC_CLK:
+			if (rate == 96000000) 		speed = 37;
+			else if (rate == 48000000)	speed = 32;
+			else if (rate == 24000000) 	speed = 22;
+			else if (rate == 12000000) 	speed = 14;
+			else if (rate ==  6000000) 	speed = 6;
+			else if (rate ==  3000000) 	speed = 1;
+			else return 0;
+			clk = 40;
+			break;
+		case VFE_CLK:
+			if (rate == 36000000) 		speed = 1;
+			else if (rate == 48000000) 	speed = 2;
+			else if (rate == 64000000) 	speed = 3;
+			else if (rate == 78000000) 	speed = 4;
+			else if (rate == 96000000) 	speed = 5;
+			else return 0;
+			clk = 41;
+			break;
+		case SPI_CLK:
+			if (rate > 15360000) 		speed = 5;
+			else if (rate > 9600000) 	speed = 4;
+			else if (rate > 4800000) 	speed = 3;
+			else if (rate >  960000) 	speed = 2;
+			else speed = 1;
+			clk = 95;
+			break;
+		case SDC1_CLK:
+			if (rate > 50000000) 		speed = 14;
+			else if (rate > 49152000) 	speed = 13;
+			else if (rate > 45000000) 	speed = 12;
+			else if (rate > 40000000) 	speed = 11;
+			else if (rate > 35000000) 	speed = 10;
+			else if (rate > 30000000) 	speed = 9;
+			else if (rate > 25000000) 	speed = 8;
+			else if (rate > 20000000) 	speed = 7;
+			else if (rate > 15000000) 	speed = 6;
+			else if (rate > 10000000) 	speed = 5;
+			else if (rate > 5000000)  	speed = 4;
+			else if (rate > 400000)		speed = 3;
+			else if (rate > 144000)		speed = 2;
+			else speed = 1;
+			clk = 66;
+			break;
+		case SDC2_CLK:
+			if (rate > 50000000) 		speed = 14;
+			else if (rate > 49152000) 	speed = 13;
+			else if (rate > 45000000) 	speed = 12;
+			else if (rate > 40000000) 	speed = 11;
+			else if (rate > 35000000) 	speed = 10;
+			else if (rate > 30000000) 	speed = 9;
+			else if (rate > 25000000) 	speed = 8;
+			else if (rate > 20000000) 	speed = 7;
+			else if (rate > 15000000) 	speed = 6;
+			else if (rate > 10000000) 	speed = 5;
+			else if (rate > 5000000)  	speed = 4;
+			else if (rate > 400000)		speed = 3;
+			else if (rate > 144000)		speed = 2;
+			else speed = 1;
+			clk = 67;
+			break;
+		case SDC1_PCLK:
+		case SDC2_PCLK:
+			return 0;
+			break;
+		default:
+			return -1;  
+    }
+    msm_proc_comm(PCOM_CLK_REGIME_SEC_SEL_SPEED, &clk, &speed);
+	
+    return 0;
+}
 
-	ret = clk_enable(&cxo_clk.c);
-	if (ret) {
-		dprintf(CRITICAL, "CXO clock failed to enable. Can't measure\n");
+static int cotulla_clk_enable(UINT32 id)
+{
+    unsigned clk = -1;
+    switch (id) {
+		case ICODEC_RX_CLK:
+			clk = 50;
+			break;
+		case ICODEC_TX_CLK:
+			clk = 52;
+			break;
+		case ECODEC_CLK:
+			clk = 42;
+			break;   
+		case SDAC_MCLK:
+			clk = 64;
+			break;
+		case IMEM_CLK:
+			clk = 55;
+			break;
+		case GRP_CLK:
+			clk = 56;
+			break;
+		case ADM_CLK:
+			clk = 19;
+			break;
+		case UART1DM_CLK:
+			clk = 78;
+			break;
+		case UART2DM_CLK:
+			clk = 80;
+			break;
+		case VFE_AXI_CLK:
+			clk = 24;
+			break;
+		case VFE_MDC_CLK:
+			clk = 40;
+			break;
+		case VFE_CLK:
+			clk = 41;
+			break;
+		case MDC_CLK:
+			clk = 53; // ??
+			break;
+		case SPI_CLK:
+			clk = 95;
+			break;
+		case MDP_CLK:
+			clk = 9;
+			break;
+		case SDC1_CLK:
+			clk = 66;
+			break;
+		case SDC2_CLK:
+			clk = 67;
+			break;
+		case SDC1_PCLK:
+			clk = 17;
+			break;
+		case SDC2_PCLK:
+			clk = 16;
+			break;
+		default:
+			return -1;  
+    }
+    msm_proc_comm(PCOM_CLK_REGIME_SEC_ENABLE, &clk, 0);//deleted, pcom_lib needed?
+	
+    return 0;
+}
+
+static int cotulla_clk_disable(UINT32 id)
+{
+    unsigned clk = -1;
+    switch (id) {
+		case ICODEC_RX_CLK:
+			clk = 50;
+			break;
+		case ICODEC_TX_CLK:
+			clk = 52;
+			break;
+		case ECODEC_CLK:
+			clk = 42;
+			break;   
+		case SDAC_MCLK:
+			clk = 64;
+			break;
+		case IMEM_CLK:
+			clk = 55;
+			break;
+		case GRP_CLK:
+			clk = 56;
+			break;
+		case ADM_CLK:
+			clk = 19;
+			break;
+		case UART1DM_CLK:
+			clk = 78;
+			break;
+		case UART2DM_CLK:
+			clk = 80;
+			break;
+		case VFE_AXI_CLK:
+			clk = 24;
+			break;
+		case VFE_MDC_CLK:
+			clk = 40;
+			break;
+		case VFE_CLK:
+			clk = 41;
+			break;
+		case MDC_CLK:
+			clk = 53; // WTF??
+			break;
+		case SPI_CLK:
+			clk = 95;
+			break;
+		case MDP_CLK:
+			clk = 9;
+			break;
+		case SDC1_CLK:
+			clk = 66;
+			break;
+		case SDC2_CLK:
+			clk = 67;
+			break;
+		case SDC1_PCLK:
+			clk = 17;
+			break;
+		case SDC2_PCLK:
+			clk = 16;
+			break;
+		default:
+			return -1;  
+    }
+    msm_proc_comm(PCOM_CLK_REGIME_SEC_DISABLE, &clk, 0);
+	
+    return 0;
+}
+
+static long cotulla_clk_get_rate(UINT32 id)
+{
+    unsigned clk = -1;
+    unsigned rate;
+    switch (id) {
+		case ICODEC_RX_CLK:
+			clk = 50;
+			break;
+		case ICODEC_TX_CLK:
+			clk = 52;
+			break;
+		case ECODEC_CLK:
+			clk = 42;
+			break;
+		case SDAC_MCLK:
+			clk = 64;
+			break;
+		case IMEM_CLK:
+			clk = 55;
+			break;
+		case GRP_CLK:
+			clk = 56;
+			break;
+		case ADM_CLK:
+			clk = 19;
+			break;
+		case UART1DM_CLK:
+			clk = 78;
+			break;
+		case UART2DM_CLK:
+			clk = 80;
+			break;
+		case VFE_AXI_CLK:
+			clk = 24;
+			break;
+		case VFE_MDC_CLK:
+			clk = 40;
+			break;
+		case VFE_CLK:
+			clk = 41;
+			break;
+		case MDC_CLK:
+			clk = 53; // ??
+			break;
+		case SPI_CLK:
+			clk = 95;
+			break;
+		case MDP_CLK:
+			clk = 9;
+			break;
+		case SDC1_CLK:
+			clk = 66;
+			break;
+		case SDC2_CLK:
+			clk = 67;
+			break;
+		case SDC1_PCLK:
+			clk = 17;
+			break;
+		case SDC2_PCLK:
+			clk = 16;
+			break;
+		default:
+			return 0;
+    }
+    msm_proc_comm(PCOM_CLK_REGIME_SEC_MSM_GET_CLK_FREQ_KHZ, &clk, &rate);
+	
+    return clk*1000;
+}
+
+static int cotulla_clk_set_flags(UINT32 id, unsigned long flags)
+{    
+    if (id == VFE_CLK) {        
+        if (flags == (0x00000100 << 1)) {        
+            UINT32 f = 0; 
+            msm_proc_comm(PCOM_CLK_REGIME_SEC_SEL_VFE_SRC, &f, 0);
+            return 0;
+        }
+        else if (flags == 0x00000100) {
+            UINT32 f = 1; 
+            msm_proc_comm(PCOM_CLK_REGIME_SEC_SEL_VFE_SRC, &f, 0);
+            return 0;
+        }
+    }
+	
+    return -1;
+}
+
+int clk_enable(unsigned id)
+{
+	if (id == ACPU_CLK)
+		return -1;
+		
+	struct msm_clock_params params;
+	int r;
+	
+	r = cotulla_clk_enable(id);
+	if (r != -1)
+		return r;
+
+	params = msm_clk_get_params(id);
+
+	if ( id == IMEM_CLK || id == GRP_CLK ) {
+		set_grp_clk( 1 );
+		writel(readl(params.glbl) | (1U << params.idx), params.glbl);
 		return 0;
 	}
 
-	/* Enable CXO/4 and RINGOSC branch and root. */
-	pdm_reg_backup = readl_relaxed(PDM_CLK_NS_REG);
-	ringosc_reg_backup = readl_relaxed(RINGOSC_NS_REG);
-	writel_relaxed(0x2898, PDM_CLK_NS_REG);
-	writel_relaxed(0xA00, RINGOSC_NS_REG);
+	if (params.idx > 0 && params.glbl > 0) {
+		writel(readl(params.glbl) | (1U << params.idx), params.glbl);
+		return 0;
+	} else if (params.ns_only > 0 && params.offset) {
+		writel((readl(MSM_CLK_CTL_BASE + params.offset) & 0xfffff000) | params.ns_only, MSM_CLK_CTL_BASE + params.offset);
+		return 0;
+	}
+	
+	return 0;
+}
 
-	/*
-	* The ring oscillator counter will not reset if the measured clock
-	* is not running.  To detect this, run a short measurement before
-	* the full measurement.  If the raw results of the two are the same
-	* then the clock must be off.
-	*/
+void clk_disable(unsigned id)
+{
+	struct msm_clock_params params;
+	params = msm_clk_get_params(id);
+	int r;
 
-	/* Run a short measurement. (~1 ms) */
-	raw_count_short = run_measurement(0x1000);
-	/* Run a full measurement. (~14 ms) */
-	raw_count_full = run_measurement(clk->sample_ticks);
+    r = cotulla_clk_disable(id);
+    if (r != -1)
+		return;
 
-	writel_relaxed(ringosc_reg_backup, RINGOSC_NS_REG);
-	writel_relaxed(pdm_reg_backup, PDM_CLK_NS_REG);
-
-	/* Return 0 if the clock is off. */
-	if (raw_count_full == raw_count_short)
-		ret = 0;
-	else {
-		/* Compute rate in Hz. */
-		raw_count_full = ((raw_count_full * 10) + 15) * 4800000;
-		raw_count_full /= ((clk->sample_ticks * 10) + 35);
-		ret = (raw_count_full * clk->multiplier);
+	if ( id == IMEM_CLK || id == GRP_CLK ) {
+		set_grp_clk( 1 );
+		writel(readl(params.glbl) & ~(1U << params.idx), params.glbl);
+		return;
 	}
 
-	/* Route dbg_hs_clk to PLLTEST.  300mV single-ended amplitude. */
-	writel_relaxed(0x38F8, PLLTEST_PAD_CFG_REG);
-
-	clk_disable(&cxo_clk.c);
-
-	return ret;
-}
-#else
-static int measure_clk_set_parent(struct clk *clk, struct clk *parent)
-{
-	return ERR_INVALID_ARGS;
+	if (params.idx > 0 && params.glbl > 0) {
+		writel(readl(params.glbl) & ~(1U << params.idx), params.glbl);
+	} else if (params.ns_only > 0 && params.offset)	{
+		writel(readl(MSM_CLK_CTL_BASE + params.offset) & 0xfffff000, MSM_CLK_CTL_BASE + params.offset);
+	}
 }
 
-static unsigned int measure_clk_get_rate(struct clk *clk)
+int clk_set_rate(unsigned id, unsigned freq)
 {
-	return 0;
+	int retval = 0;
+    retval = cotulla_clk_set_rate(id, freq);
+	if (retval != -1)
+		return retval;
+		
+	retval = set_mdns_host_clock(id, freq);
+		
+	return retval;
 }
-#endif
 
-
-
-static struct clk_ops measure_clk_ops = {
-	.set_parent = measure_clk_set_parent,
-	.get_rate = measure_clk_get_rate,
-};
-
-static struct measure_clk measure_clk = {
-	.c = {
-		.dbg_name = "measure_clk",
-		.ops = &measure_clk_ops,
-	},
-	.multiplier = 1,
-};
-
-static struct clk_lookup msm_clocks_8960[] = {
-	CLK_LOOKUP("gsbi1_uart_clk", gsbi1_uart_clk.c),
-	CLK_LOOKUP("gsbi2_uart_clk", gsbi2_uart_clk.c),
-	CLK_LOOKUP("gsbi3_uart_clk", gsbi3_uart_clk.c),
-	CLK_LOOKUP("gsbi4_uart_clk", gsbi4_uart_clk.c),
-	CLK_LOOKUP("gsbi5_uart_clk", gsbi5_uart_clk.c),
-	CLK_LOOKUP("gsbi6_uart_clk", gsbi6_uart_clk.c),
-	CLK_LOOKUP("gsbi7_uart_clk", gsbi7_uart_clk.c),
-	CLK_LOOKUP("gsbi8_uart_clk", gsbi8_uart_clk.c),
-	CLK_LOOKUP("gsbi9_uart_clk", gsbi9_uart_clk.c),
-	CLK_LOOKUP("gsbi10_uart_clk", gsbi10_uart_clk.c),
-	CLK_LOOKUP("gsbi11_uart_clk", gsbi11_uart_clk.c),
-	CLK_LOOKUP("gsbi12_uart_clk", gsbi12_uart_clk.c),
-	CLK_LOOKUP("gsbi1_qup_clk", gsbi1_qup_clk.c),
-	CLK_LOOKUP("gsbi2_qup_clk", gsbi2_qup_clk.c),
-	CLK_LOOKUP("gsbi3_qup_clk", gsbi3_qup_clk.c),
-	CLK_LOOKUP("gsbi4_qup_clk", gsbi4_qup_clk.c),
-	CLK_LOOKUP("gsbi5_qup_clk", gsbi5_qup_clk.c),
-	CLK_LOOKUP("gsbi6_qup_clk", gsbi6_qup_clk.c),
-	CLK_LOOKUP("gsbi7_qup_clk", gsbi7_qup_clk.c),
-	CLK_LOOKUP("gsbi8_qup_clk", gsbi8_qup_clk.c),
-	CLK_LOOKUP("gsbi9_qup_clk", gsbi9_qup_clk.c),
-	CLK_LOOKUP("gsbi10_qup_clk", gsbi10_qup_clk.c),
-	CLK_LOOKUP("gsbi11_qup_clk", gsbi11_qup_clk.c),
-	CLK_LOOKUP("gsbi12_qup_clk", gsbi12_qup_clk.c),
-	CLK_LOOKUP("gsbi1_pclk", gsbi1_p_clk.c),
-	CLK_LOOKUP("gsbi2_pclk", gsbi2_p_clk.c),
-	CLK_LOOKUP("gsbi3_pclk", gsbi3_p_clk.c),
-	CLK_LOOKUP("gsbi4_pclk", gsbi4_p_clk.c),
-	CLK_LOOKUP("gsbi5_pclk", gsbi5_p_clk.c),
-	CLK_LOOKUP("gsbi6_pclk", gsbi6_p_clk.c),
-	CLK_LOOKUP("gsbi7_pclk", gsbi7_p_clk.c),
-	CLK_LOOKUP("gsbi8_pclk", gsbi8_p_clk.c),
-	CLK_LOOKUP("gsbi9_pclk", gsbi9_p_clk.c),
-	CLK_LOOKUP("gsbi10_pclk", gsbi10_p_clk.c),
-	CLK_LOOKUP("gsbi11_pclk", gsbi11_p_clk.c),
-	CLK_LOOKUP("gsbi12_pclk", gsbi12_p_clk.c),
-	CLK_LOOKUP("usb_hs_clk", usb_hs1_xcvr_clk.c),
-	CLK_LOOKUP("sdc1_clk", sdc1_clk.c),
-	CLK_LOOKUP("sdc2_clk", sdc2_clk.c),
-	CLK_LOOKUP("sdc3_clk", sdc3_clk.c),
-	CLK_LOOKUP("sdc4_clk", sdc4_clk.c),
-	CLK_LOOKUP("sdc5_clk", sdc5_clk.c),
-	CLK_LOOKUP("mdp_axi_clk", mdp_axi_clk.c),
-	CLK_LOOKUP("mdp_clk", mdp_clk.c),
-	CLK_LOOKUP("lut_mdp", lut_mdp_clk.c),
-	CLK_LOOKUP("ce1_pclk", ce1_p_clk.c),
-	CLK_LOOKUP("ce1_clk", ce1_core_clk.c),
-	CLK_LOOKUP("ce3_src_clk", ce3_src_clk.c),
-	CLK_LOOKUP("ce3_pclk", ce3_p_clk.c),
-	CLK_LOOKUP("ce3_clk", ce3_core_clk.c),
-	CLK_LOOKUP("measure", measure_clk.c),
-
-};
-
-static int sr_pll_clk_enable(struct clk *clk)
+unsigned long msm_clk_get_rate(UINT32 id)
 {
-	UINT32 mode;
-	struct pll_clk *pll = to_pll_clk(clk);
+	unsigned long rate = 0;
+	rate = cotulla_clk_get_rate(id);
+	if(rate == 0) {
+		switch (id) {
+			case SDC1_CLK:
+			case SDC2_CLK:
+			case SDC3_CLK:
+			case SDC4_CLK:
+			case UART1DM_CLK:
+			case UART2DM_CLK:
+			case USB_HS_CLK:
+			case SDAC_CLK:
+			case TV_DAC_CLK:
+			case TV_ENC_CLK:
+			case USB_OTG_CLK:
+				rate = get_mdns_host_clock(id);
+				break;
+			case SDC1_PCLK:
+			case SDC2_PCLK:
+			case SDC3_PCLK:
+			case SDC4_PCLK:
+				rate = 64000000;
+				break;
+			default:
+				rate = 0;
+		}
+	}
+	
+	return rate;
+}
 
-	mode = readl_relaxed(pll->mode_reg);
-	/* De-assert active-low PLL reset. */
-	mode |= BIT(2);
-	writel_relaxed(mode, pll->mode_reg);
-
-	/*
-	* H/W requires a 5us delay between disabling the bypass and
-	* de-asserting the reset. Delay 10us just to be safe.
-	*/
-	ArmDataMemoryBarrier();
-	udelay(10);
-
-	/* Disable PLL bypass mode. */
-	mode |= BIT(1);
-	writel_relaxed(mode, pll->mode_reg);
-
-	/* Wait until PLL is locked. */
-	ArmDataMemoryBarrier();
-	udelay(60);
-
-	/* Enable PLL output. */
-	mode |= BIT(0);
-	writel_relaxed(mode, pll->mode_reg);
-
+int msm_clk_set_flags(UINT32 id, unsigned long flags)
+{
+	int r;
+    r = cotulla_clk_set_flags(id, flags);
+	if (r != -1)
+		return r;
+		
 	return 0;
 }
 
-static unsigned msm_num_clocks_8960 = ARRAY_SIZE(msm_clocks_8960);
-
-void msm_clocks_init(VOID)
+int msm_clk_is_enabled(UINT32 id)
 {
-	clk_ops_pll.enable = sr_pll_clk_enable;
-	clk_init(msm_clocks_8960, msm_num_clocks_8960);
+	int is_enabled = 0;
+	unsigned bit;
+	UINT32 glbl;
+	glbl = msm_clk_get_glbl(id);
+	bit = msm_clk_enable_bit(id);
+	if (bit > 0 && glbl>0) {
+		is_enabled = (readl(glbl) & bit) != 0;
+	}
+	
+	if (id==SDC1_PCLK || id==SDC2_PCLK || id==SDC3_PCLK || id==SDC4_PCLK)
+		is_enabled = 1;
+		
+	return is_enabled;
 }
 
+int msm_pll_request(unsigned id, unsigned on)
+{
+	on = !!on;
+	
+	return msm_proc_comm(PCOM_CLKCTL_RPC_PLL_REQUEST, &id, &on);
+}
 
+static int clocks_on[] = {
+	SDC1_CLK,
+	SDC2_CLK,
+	SDC3_CLK,
+	SDC4_CLK,
+};
+
+void msm_clock_init(void)
+{
+	for (int i = 0; i < (int)ARRAY_SIZE(clocks_on); i++)
+		clk_enable(clocks_on[i]);
+}

@@ -1,11 +1,11 @@
 
 [Defines]
   INF_VERSION                    = 0x00010005
-  BASE_NAME                      = MsmTargetClockLib
-  FILE_GUID                      = A9BBFDB5-108A-4989-9668-4901007083D9
+  BASE_NAME                      = MsmPcomLib
+  FILE_GUID                      = A9BBFDB5-108A-4989-9668-4901007083DA
   MODULE_TYPE                    = BASE
   VERSION_STRING                 = 1.0
-  LIBRARY_CLASS                  = MsmTargetClockLib
+  LIBRARY_CLASS                  = MsmPcomLib
 
 
 #
@@ -15,8 +15,7 @@
   GCC:*_*_*_CC_FLAGS = -Werror -Wno-unused-function -Wno-unused-variable
   
 [Sources.common]
-  Clock.c
-  ACPUClock.c
+  pcom.c
 
 [Packages]
   EmbeddedPkg/EmbeddedPkg.dec
@@ -28,10 +27,6 @@
   DebugLib
   IoLib
   ArmLib
-  MsmClockLib
-  MsmPcomLib
-  # MsmTargetMmcLib
-
 
 [FixedPcd]
   #gOmap35xxTokenSpaceGuid.PcdOmap35xxConsoleUart

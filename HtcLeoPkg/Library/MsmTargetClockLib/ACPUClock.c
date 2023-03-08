@@ -1,29 +1,17 @@
 /*
- * Copyright (c) 2012-2013, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2008 QUALCOMM Incorporated.
+ * Copyright (c) 2009 Google, Inc.
+ * Copyright (c) 2012 Shantanu Gupta <shans95g@gmail.com>
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above copyright
- *     notice, this list of conditions and the following disclaimer in the
- *     documentation and/or other materials provided with the distribution.
- *   * Neither the name of The Linux Foundation nor
- *     the names of its contributors may be used to endorse or promote
- *     products derived from this software without specific prior written
- *     permission.
+ * This software is licensed under the terms of the GNU General Public
+ * License version 2, as published by the Free Software Foundation, and
+ * may be copied, distributed, and modified under those terms.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NON-INFRINGEMENT ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
- * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
- * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
- * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
  */
 
 #include <Base.h>
@@ -36,23 +24,59 @@
 
 #include <Library/qcom_lk.h>
 
-#include <Library/qcom_msm8960_iomap.h>
-#include <Library/qcom_msm8960_irqs.h>
-#include <Library/qcom_msm8960_clock.h>
+#include <Library/acpuclock.h>
+
+#include <Library/qcom_qsd8250_iomap.h>
+#include <Library/qcom_qsd8250_irqs.h>
+#include <Library/qcom_qsd8250_clock.h>
 
 
-#include <Library/qcom_clock.h>
-#include <Library/qcom_clock_pll.h>
-#include <Library/qcom_clock_local.h>
+//#include <Library/qcom_clock.h>
+//#include <Library/qcom_clock_pll.h>
+//#include <Library/qcom_clock_local.h>
 
 //#include <uart_dm.h>
 //#include <gsbi.h>
 #include <Library/qcom_mmc.h>
-//#include <board.h>
-//#include <smem.h>
+
+/*#include <array.h>
+#include <compiler.h>
+#include <debug.h>
+#include <reg.h>
+#include <kernel/thread.h>
+#include <pcom.h>
+#include <platform/iomap.h>
+#include <target/clock.h>
+#include <target/acpuclock.h>
+#include <platform/timer.h>*/
+
+#define SHOT_SWITCH  4
+#define HOP_SWITCH   5
+#define SIMPLE_SLEW  6
+#define COMPLEX_SLEW 7
+
+#define SPSS_CLK_CNTL_ADDR		(MSM_CSR_BASE + 0x100)
+#define SPSS_CLK_SEL_ADDR		(MSM_CSR_BASE + 0x104)
+
+#define SCPLL_CTL_ADDR			(MSM_SCPLL_BASE + 0x4)
+#define SCPLL_STATUS_ADDR		(MSM_SCPLL_BASE + 0x18)
+#define SCPLL_FSM_CTL_EXT_ADDR	(MSM_SCPLL_BASE + 0x10)
+
+#define CLK_TCXO		0 /* 19.2 MHz */
+#define CLK_GLOBAL_PLL	1 /* 768 MHz */
+#define CLK_MODEM_PLL	4 /* 245 MHz (UMTS) or 235.93 MHz (CDMA) */
+
+#define CCTL(src, div) (((src) << 4) | (div - 1))
+
+#define SRC_RAW		0 /* clock from SPSS_CLK_CNTL */
+#define SRC_SCPLL	1 /* output of scpll 128-998 MHZ */
+
+//#define 	dmb()   __asm__ __volatile__("DMB")
+
+extern void dmb(void);
 
 /* Set rate and enable the clock */
-static void clock_config(UINT32 ns, UINT32 md, UINT32 ns_addr, UINT32 md_addr)
+void clock_config(UINT32 ns, UINT32 md, UINT32 ns_addr, UINT32 md_addr)
 {
 	unsigned int val = 0;
 
@@ -91,210 +115,299 @@ static void clock_config(UINT32 ns, UINT32 md, UINT32 ns_addr, UINT32 md_addr)
 	writel(val, ns_addr);
 }
 
-/* Write the M,N,D values and enable the MMSS Clocks */
-void config_mmss_clk(UINT32 ns,UINT32 md,UINT32 cc,UINT32 ns_addr, UINT32 md_addr, UINT32 cc_addr)
+struct clkctl_acpu_speed {
+	unsigned acpu_khz;
+	unsigned clk_cfg;
+	unsigned clk_sel;
+	unsigned sc_l_value;
+	int      vdd;
+	unsigned axiclk_khz;
+};
+
+struct clkctl_acpu_speed acpu_freq_tbl[] = {
+	{ 245000, CCTL(CLK_MODEM_PLL, 1),	SRC_RAW,   0x00, 1050, 29000 },
+	{ 384000, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x0A, 1050, 58000 },
+	{ 422400, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x0B, 1050, 117000 },
+	{ 460800, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x0C, 1050, 117000 },
+	{ 499200, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x0D, 1075, 117000 },
+	{ 537600, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x0E, 1100, 117000 },
+	{ 576000, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x0F, 1100, 117000 },
+	{ 614400, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x10, 1125, 117000 },
+	{ 652800, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x11, 1150, 117000 },
+	{ 691200, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x12, 1175, 117000 },
+	{ 729600, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x13, 1200, 117000 },
+	{ 768000, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x14, 1200, 128000 },
+	{ 806400, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x15, 1225, 128000 },
+	{ 844800, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x16, 1250, 128000 },
+	{ 883200, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x17, 1275, 128000 },
+	{ 921600, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x18, 1300, 128000 },
+	{ 960000, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x19, 1300, 128000 },
+	{ 998400, CCTL(CLK_TCXO, 1),		SRC_SCPLL, 0x1A, 1300, 128000 },
+	{ 0, 0, 0, 0, 0, 0 }
+};
+
+struct clkctl_acpu_speed *acpu_stby = &acpu_freq_tbl[0];
+struct clkctl_acpu_speed *acpu_mpll = &acpu_freq_tbl[0];
+struct clkctl_acpu_speed *current_speed = NULL;
+
+#define IS_ACPU_STANDBY(x)	(((x)->clk_cfg == acpu_stby->clk_cfg) && ((x)->clk_sel == acpu_stby->clk_sel))
+
+#define PLLMODE_POWERDOWN	0
+#define PLLMODE_BYPASS		1
+#define PLLMODE_STANDBY		2
+#define PLLMODE_FULL_CAL	4
+#define PLLMODE_HALF_CAL	5
+#define PLLMODE_STEP_CAL	6
+#define PLLMODE_NORMAL		7
+#define PLLMODE_MASK		7
+
+static void scpll_power_down(void)
 {
-	unsigned int val = 0;
+	UINT32 val;
 
-	clock_config(ns, md, ns_addr, md_addr);
+	/* Wait for any frequency switches to finish. */
+	while (readl(SCPLL_STATUS_ADDR) & 0x1);
 
-	/* Enable MND counter */
-	val = cc | (1 << 5);
-	val = val | readl(cc_addr);
-	writel(val, cc_addr);
+	/* put the pll in standby mode */
+	val = readl(SCPLL_CTL_ADDR);
+	val = (val & (~PLLMODE_MASK)) | PLLMODE_STANDBY;
+	writel(val, SCPLL_CTL_ADDR);
+	dmb();
 
-	/* Enable the root of the clock tree */
-	val = 1 << 2;
-	val = val | readl(cc_addr);
-	writel(val, cc_addr);
+	/* wait to stabilize in standby mode */
+	udelay(10);
 
-	/* Enable the Pixel Clock */
-	val = 1 << 0;
-	val = val | readl(cc_addr);
-	writel(val, cc_addr);
-
-	/* Force On */
-	val = 1U << 31;
-	val = val | readl(cc_addr);
-	writel(val, cc_addr);
+	val = (val & (~PLLMODE_MASK)) | PLLMODE_POWERDOWN;
+	writel(val, SCPLL_CTL_ADDR);
+	dmb();
 }
 
-void hsusb_clock_init(void)
+static void scpll_set_freq(UINT32 lval)
 {
-	clk_get_set_enable("usb_hs_clk", 60000000, 1);
+	UINT32 val, ctl;
+
+	if (lval > 33)
+		lval = 33;
+	if (lval < 10)
+		lval = 10;
+
+	/* wait for any calibrations or frequency switches to finish */
+	while (readl(SCPLL_STATUS_ADDR) & 0x3);
+
+	ctl = readl(SCPLL_CTL_ADDR);
+
+	if ((ctl & PLLMODE_MASK) != PLLMODE_NORMAL) {
+		/* put the pll in standby mode */
+		writel((ctl & (~PLLMODE_MASK)) | PLLMODE_STANDBY, SCPLL_CTL_ADDR);
+		dmb();
+
+		/* wait to stabilize in standby mode */
+		udelay(10);
+
+		/* switch to 384 MHz */
+		val = readl(SCPLL_FSM_CTL_EXT_ADDR);
+		val = (val & (~0x1FF)) | (0x0A << 3) | SHOT_SWITCH;
+		writel(val, SCPLL_FSM_CTL_EXT_ADDR);
+		dmb();
+
+		ctl = readl(SCPLL_CTL_ADDR);
+		writel(ctl | PLLMODE_NORMAL, SCPLL_CTL_ADDR);
+		dmb();
+
+		/* wait for frequency switch to finish */
+		while (readl(SCPLL_STATUS_ADDR) & 0x1) ;
+
+		/* completion bit is not reliable for SHOT switch */
+		udelay(25);
+	}
+
+	/* write the new L val and switch mode */
+	val = readl(SCPLL_FSM_CTL_EXT_ADDR);
+	val = (val & (~0x1FF)) | (lval << 3) | HOP_SWITCH;
+	writel(val, SCPLL_FSM_CTL_EXT_ADDR);
+	dmb();
+
+	ctl = readl(SCPLL_CTL_ADDR);
+	writel(ctl | PLLMODE_NORMAL, SCPLL_CTL_ADDR);
+	dmb();
+
+	/* wait for frequency switch to finish */
+	while (readl(SCPLL_STATUS_ADDR) & 0x1) ;
 }
 
-/* Configure UART clock - based on the gsbi id */
-void clock_config_uart_dm(UINT8 id)
+/* this is still a bit weird... */
+static void select_clock(unsigned src, unsigned config)
 {
-	char gsbi_uart_clk_id[64];
-	char gsbi_p_clk_id[64];
+	UINT32 val;
 
-	AsciiSPrint(gsbi_uart_clk_id, sizeof(gsbi_uart_clk_id),"gsbi%d_uart_clk", id);
-	clk_get_set_enable(gsbi_uart_clk_id, 1843200, 1);
+	if (src == SRC_RAW) {
+		UINT32 sel = readl(SPSS_CLK_SEL_ADDR);
+		unsigned shift = (sel & 1) ? 8 : 0;
 
-	AsciiSPrint(gsbi_p_clk_id, sizeof(gsbi_p_clk_id),"gsbi%d_pclk", id);
-	clk_get_set_enable(gsbi_p_clk_id, 0, 1);
+		/* set other clock source to the new configuration */
+		val = readl(SPSS_CLK_CNTL_ADDR);
+		val = (val & (~(0x7F << shift))) | (config << shift);
+		writel(val, SPSS_CLK_CNTL_ADDR);
+
+		/* switch to other clock source */
+		writel(sel ^ 1, SPSS_CLK_SEL_ADDR);
+
+		dmb(); /* necessary? */
+	}
+
+	/* switch to new source */
+	val = readl(SPSS_CLK_SEL_ADDR) & (~6);
+	writel(val | ((src & 3) << 1), SPSS_CLK_SEL_ADDR);
 }
 
-/* Configure i2c clock */
-void clock_config_i2c(UINT8 id, UINT32 freq)
+int acpuclk_set_rate(unsigned long rate, enum setrate_reason reason)
 {
-	char gsbi_qup_clk_id[64];
-	char gsbi_p_clk_id[64];
+	struct clkctl_acpu_speed *cur, *next;
 
-	AsciiSPrint(gsbi_qup_clk_id, sizeof(gsbi_qup_clk_id),"gsbi%d_qup_clk", id);
-	clk_get_set_enable(gsbi_qup_clk_id, 24000000, 1);
+	cur = current_speed;
 
-	AsciiSPrint(gsbi_p_clk_id, sizeof(gsbi_p_clk_id),"gsbi%d_pclk", id);
-	clk_get_set_enable(gsbi_p_clk_id, 0, 1);
+	/* convert to KHz */
+	rate /= 1000;
+
+	//dprintf(INFO, "[ACPU] switching to %d MHz\n", ((int) (rate/1000)));
+
+	if (rate == cur->acpu_khz || rate == 0)
+		return 0;
+
+	next = acpu_freq_tbl;
+	for (;;) {
+		if (next->acpu_khz == rate)
+			break;
+		if (next->acpu_khz == 0)
+			return -1;
+		next++;
+	}
+
+	if (next->clk_sel == SRC_SCPLL) {
+		/* curr -> standby(MPLL speed) -> target */
+		if (!IS_ACPU_STANDBY(cur))
+			select_clock(acpu_stby->clk_sel, acpu_stby->clk_cfg);
+		scpll_set_freq(next->sc_l_value);
+		select_clock(SRC_SCPLL, 0);
+	} else {
+		if (cur->clk_sel == SRC_SCPLL) {
+			select_clock(acpu_stby->clk_sel, acpu_stby->clk_cfg);
+			select_clock(next->clk_sel, next->clk_cfg);
+			scpll_power_down();
+		} else {
+			select_clock(next->clk_sel, next->clk_cfg);
+		}
+	}
+
+	current_speed = next;
+
+/*	This will fail anyway, so remove it for now
+	if (reason == SETRATE_CPUFREQ) {
+		if (cur->axiclk_khz != next->axiclk_khz) 
+			clk_set_rate(EBI1_CLK, next->axiclk_khz * 1000);
+	}
+*/
+
+	return 0;
 }
 
-/* Turn on MDP related clocks and pll's for MDP */
-void mdp_clock_init(void)
+static unsigned acpuclk_find_speed(void)
 {
-	/* Set MDP clock to 200MHz */
-	clk_get_set_enable("mdp_clk", 200000000, 1);
+	UINT32 sel, val;
 
-	/* Seems to lose pixels without this from status 0x051E0048 */
-	clk_get_set_enable("lut_mdp", 0, 1);
-}
-
-/* Initialize all clocks needed by Display */
-void mmss_clock_init(void)
-{
-	/* Configure Pixel clock */
-	config_mmss_clk(PIXEL_NS_VAL, PIXEL_MD_VAL, PIXEL_CC_VAL,
-			DSI_PIXEL_NS_REG, DSI_PIXEL_MD_REG, DSI_PIXEL_CC_REG);
-
-	/* Configure DSI clock */
-	config_mmss_clk(DSI_NS_VAL, DSI_MD_VAL, DSI_CC_VAL, DSI_NS_REG,
-			DSI_MD_REG, DSI_CC_REG);
-
-	/* Configure Byte clock */
-	config_mmss_clk(BYTE_NS_VAL, 0x0, BYTE_CC_VAL, DSI1_BYTE_NS_REG, 0x0,
-			DSI1_BYTE_CC_REG);
-
-	/* Configure ESC clock */
-	config_mmss_clk(ESC_NS_VAL, 0x0, ESC_CC_VAL, DSI1_ESC_NS_REG, 0x0,
-			DSI1_ESC_CC_REG);
-}
-
-void liquid_mmss_clock_init(void)
-{
-	/* Configure Pixel clock = 78.75 MHZ */
-	config_mmss_clk(0x2003, 0x01FB, 0x0005,
-			DSI_PIXEL_NS_REG, DSI_PIXEL_MD_REG, DSI_PIXEL_CC_REG);
-
-	/* Configure DSI clock = 236.25 MHZ */
-	config_mmss_clk(0x03, 0x03FB, 0x05,
-			DSI_NS_REG, DSI_MD_REG, DSI_CC_REG);
-
-	/* Configure Byte clock = 59.06 MHZ */
-	config_mmss_clk(0x0B01, 0x0, 0x80ff0025,
-			DSI1_BYTE_NS_REG, 0x0, DSI1_BYTE_CC_REG);
-
-	/* Configure ESC clock = 13.5 MHZ */
-	config_mmss_clk(0x1B00, 0x0, 0x005,
-			DSI1_ESC_NS_REG, 0x0, DSI1_ESC_CC_REG);
-}
-
-void mmss_clock_disable(void)
-{
-	writel(0x80000000, DSI1_BYTE_CC_REG);
-	writel(0x0, DSI_PIXEL_CC_REG);
-	writel(0x0, DSI1_BYTE_NS_REG);
-	writel(0x0, DSI1_ESC_CC_REG);
-	writel(0x0, DSI1_ESC_NS_REG);
-
-	/* Disable root clock */
-	writel(0x0, DSI_CC_REG);
-}
-
-/* Intialize MMC clock */
-void clock_init_mmc(UINT32 interface)
-{
-	/* Nothing to be done. */
-}
-
-/* Configure MMC clock */
-void clock_config_mmc(UINT32 interface, UINT32 freq)
-{
-	char sdc_clk[64];
-	unsigned rate;
-	UINT32 reg = 0;
-
-	AsciiSPrint(sdc_clk, sizeof(sdc_clk), "sdc%d_clk", interface);
-
-	/* Disalbe MCI_CLK before changing the sdcc clock */
-	mmc_boot_mci_clk_disable();
-
-	switch(freq)
-	{
-	case MMC_CLK_400KHZ:
-		rate = 144000;
-		break;
-	case MMC_CLK_48MHZ:
-	case MMC_CLK_50MHZ: /* Max supported is 48MHZ */
-		rate = 48000000;
-		break;
-	case MMC_CLK_96MHZ:
-		rate = 96000000;
-		break;
+	sel = readl(SPSS_CLK_SEL_ADDR);
+	switch ((sel & 6) >> 1) {
+	case 1:
+		val = readl(SCPLL_FSM_CTL_EXT_ADDR);
+		val = (val >> 3) & 0x3f;
+		return val * 38400;
+	case 2:
+		return 128000;
 	default:
-		ASSERT(0);
-
-	};
-
-	clk_get_set_enable(sdc_clk, rate, 1);
-
-	/* Enable MCI clk */
-	mmc_boot_mci_clk_enable();
-}
-
-/* Configure crypto engine clock */
-void ce_clock_init(void)
-{
-    //UINT32 platform_id;
-
-    //platform_id = board_platform_id();
-
-	//if ((platform_id == APQ8064) || (platform_id == APQ8064AA)
-	//	|| (platform_id == APQ8064AB))
-	//{
-	//	/* Enable HCLK for CE3 */
-	//	clk_get_set_enable("ce3_pclk", 0, 1);
-//
-	//	/* Enable core clk for CE3 */
-	//	clk_get_set_enable("ce3_clk", 0, 1);
-	//}
-	//else
-	{
-		/* Enable HCLK for CE1 */
-		clk_get_set_enable("ce1_pclk", 0, 1);
-
-		/* Enable core clk for CE3 */
-		clk_get_set_enable("ce1_clk", 0, 1);
+		//dprintf(CRITICAL, "acpu_find_speed: failed spinning forever!\n");
+		for(;;);
+		return 0;
 	}
 }
-/* Async Reset CE1 */
-void ce_async_reset()
+
+#define PCOM_MODEM_PLL	0
+
+static void acpuclk_init(int freq_num)
 {
-	/* Enable Async reset bit for HCLK CE1 */
-	writel((1<<7) | (1 << 4), CE1_HCLK_CTL_REG);
-	/* Enable Async reset bit for core clk for CE1 */
-	writel((1<<7) | (1 << 4), CE1_CORE_CLK_CTL_REG);
+	if (acpuclk_init_done)
+		return;
 
-	/* Add a small delay between switching the
-	 * async intput from high to low
+	unsigned init_khz __UNUSED;
+	init_khz = acpuclk_find_speed();
+	/*
+	 * request the modem pll, and then drop it. We don't want to keep a
+	 * ref to it, but we do want to make sure that it is initialized at
+	 * this point. The ARM9 will ensure that the MPLL is always on
+	 * once it is fully booted, but it may not be up by the time we get
+	 * to here. So, our pll_request for it will block until the mpll is
+	 * actually up. We want it up because we will want to use it as a
+	 * temporary step during frequency scaling.
 	 */
-	 udelay(2);
+	msm_pll_request(PCOM_MODEM_PLL, 1);
+	msm_pll_request(PCOM_MODEM_PLL, 0);
 
-	/* Disable Async reset bit for HCLK for CE1 */
-	writel((1 << 4), CE1_HCLK_CTL_REG);
-	/* Disable Async reset bit for core clk for CE1 */
-	writel((1 << 4), CE1_CORE_CLK_CTL_REG);
+	if (!(readl(MSM_CLK_CTL_BASE + 0x300) & 1)) {
+		//dprintf(CRITICAL, "%s: MPLL IS NOT ON!!! RUN AWAY!!\n", __func__);
+		acpuclk_init_done = 1;
+		for(;;); /* DO NOT RETURN */
+	}
 
+	/* 
+	 * Move to 768MHz for boot, which is a safe frequency
+	 * for all versions of Scorpion at the moment.
+	 */
+	current_speed = (struct clkctl_acpu_speed *) &acpu_freq_tbl[freq_num];
+
+	/*
+	 * Bootloader needs to have SCPLL operating, but we're
+	 * going to step over to the standby clock and make sure
+	 * we select the right frequency on SCPLL and then
+	 * step back to it, to make sure we're sane here.
+	 */
+	select_clock(acpu_stby->clk_sel, acpu_stby->clk_cfg);
+	scpll_power_down();
+	scpll_set_freq(current_speed->sc_l_value);
+	select_clock(SRC_SCPLL, 0);
+	acpuclk_init_done = 1;
+	
 	return;
 }
 
+unsigned long acpuclk_get_rate(void)
+{
+	return (acpuclk_init_done == 1 ? current_speed->acpu_khz : 998001);
+}
+
+void msm_acpu_clock_init(int freq_num)
+{
+/*
+	drv_state.acpu_switch_time_us = 20;
+	drv_state.max_speed_delta_khz = 256000;
+	drv_state.vdd_switch_time_us = 62;
+	drv_state.power_collapse_khz = 245000;
+	drv_state.wait_for_irq_khz = 245000;
+*/
+	acpuclk_init(freq_num);
+	//clk_set_rate(EBI1_CLK, drv_state.current_speed->axiclk_khz * 1000);
+}
+
+/*
+ * koko: Decide cpu freq at startup.
+ *		 ALWAYS call after htcleo_devinfo_init()
+ */
+void htcleo_acpu_clock_init(void)
+{
+	//msm_acpu_clock_init(11 + (device_info.cpu_freq * 6));
+	/* In any other case:
+	 *  if device_info.cpu_freq = 0 then
+	 *  	boot at 768MHz (acpu_freq_tbl[11])
+	 *  if device_info.cpu_freq = 1 then
+	 *  	boot at 998MHz (acpu_freq_tbl[17]) */
+	UINTN cpu_freq = 1;
+	msm_acpu_clock_init(11 + (cpu_freq * 6));
+}

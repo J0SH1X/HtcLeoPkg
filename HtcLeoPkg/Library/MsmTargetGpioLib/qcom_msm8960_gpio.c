@@ -33,7 +33,7 @@
 
 #include <Library/qcom_lk.h>
 
-#include <Library/qcom_msm8960_iomap.h>
+#include <Library/qcom_qsd8250_iomap.h>
 #include <Library/qcom_msm8960_gpio.h>
 #include <Library/qcom_gsbi.h>
 #include <Library/qcom_pm8921.h>

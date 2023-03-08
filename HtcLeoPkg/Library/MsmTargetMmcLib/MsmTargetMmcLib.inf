@@ -13,7 +13,7 @@
 [BuildOptions.ARM]
   GCC:*_*_*_CC_FLAGS = -Werror -Wno-unused-function -Wno-unused-variable -Wno-shift-count-overflow
 [Sources.common]
-  mmc.c
+  #mmc.c
   mmcxxx.c
 
 [Packages]

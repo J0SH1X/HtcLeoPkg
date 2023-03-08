@@ -10,16 +10,11 @@
 
 #include <Library/qcom_lk.h>
 
-#include <Library/qcom_msm8960_iomap.h>
-#include <Library/qcom_msm8960_irqs.h>
-#include <Library/qcom_msm8960_clock.h>
+#include <Library/qcom_qsd8250_iomap.h>
+#include <Library/qcom_qsd8250_irqs.h>
+#include <Library/qcom_qsd8250_clock.h>
 
-
-#include <Library/qcom_clock.h>
-#include <Library/qcom_clock_pll.h>
-#include <Library/qcom_clock_local.h>
-
-#include <Library/qcom_msm8960_timer.h>
+#include <Library/qcom_qsd8250_timer.h>
 #include <Library/qcom_mmc.h>
 
 
