@@ -19,11 +19,8 @@
 #include <Library/qcom_qsd8250_iomap.h>
 #include <Library/qcom_qsd8250_irqs.h>
 #include <Library/qcom_qsd8250_clock.h>
+#include <Library/qcom_qsd8250_timer.h>
 
-
-//#include <Library/qcom_clock.h>
-//#include <Library/qcom_clock_pll.h>
-//#include <Library/qcom_clock_local.h>
 
 /*
  * Copyright (C) 2007 Google, Inc.
@@ -168,7 +165,7 @@ static void set_grp_clk( int on )
 		//vdd_grp gfs_ctl
 		writel(                              0x11f,          MSM_CLK_CTL_BASE+0x284); //VDD_GRP_GFS_CTL
 		// very rough delay
-		//mdelay(20);//deleted
+		mdelay(20);
 		//grp NS
 		writel(readl(MSM_CLK_CTL_BASE+0x84)  |0x800,         MSM_CLK_CTL_BASE+0x84); //GRP_NS_REG
 		writel(readl(MSM_CLK_CTL_BASE+0x84)  |0x80,          MSM_CLK_CTL_BASE+0x84); //GRP_NS_REG

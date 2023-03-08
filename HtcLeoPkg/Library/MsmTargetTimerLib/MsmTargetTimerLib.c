@@ -44,77 +44,22 @@
 //https://github.com/groeck/coreboot/blob/a234f45601e6e85a5179ec9cc446f070b86f425b/src/soc/qualcomm/ipq806x/timer.c
 
 
-
-//ms�Ǻ���=0.001��
-//us��΢��=0.000001��
-//ns������=0.000000001��
-//http://blog.163.com/arm_linux008/blog/static/13780414220107462045150/
-
-
-//1��=1000����=1000000΢��=1000000000����=1000000000000Ƥ��=1000000000000000����
-//1s=1000ms=1000000us=1000000000ns=1000000000000ps=1000000000000000fs
-//�ں˲㣺
-//   include 
-//   1��void ndelay(unsigned long nsecs);         ���뼶��1/10^-10
-//   2��void udelay(unsigned long usecs);         ΢�뼶: 1/10^-6
-//   3��void mdelay(unsigned long msecs);         ���뼶��1/10^-3
-
-//   * With 32KHz clock, minimum possible delay is 31.25 Micro seconds and
-//   * its multiples. In Rumi GPT clock is 32 KHz
-
-
-//ref 
-// clock is 32768Hz = 33k
-// 1ms = 33 ticks
-// 1us = 0.033 ticks
-// 1ns = 0.000033 ticks
-//������ʱ
-//     1000us        30us
-//     33 ticks      1 ticks
-void mdelay(unsigned msecs)
+//inline void delay_ticks(unsigned ticks)
+void delay_ticks(unsigned ticks)
 {
-	if(1)
-	{
-		MicroSecondDelay(msecs);
-	}
-	else
-	{
-		msecs *= 33;
-
-		writel(0, GPT_CLEAR);
-		writel(0, GPT_ENABLE);
-		while (readl(GPT_COUNT_VAL) != 0);
-
-		writel(GPT_ENABLE_EN, GPT_ENABLE);
-		while (readl(GPT_COUNT_VAL) < msecs);
-
-		writel(0, GPT_ENABLE);
-		writel(0, GPT_CLEAR);
-	}
+	ticks += readl(GPT_COUNT_VAL);
+	while(readl(GPT_COUNT_VAL) < ticks)
+		;
 }
 
-//΢����ʱ��С�ӳ���30us��usecs = 1
+void mdelay(unsigned msecs)
+{
+	delay_ticks((msecs * 33));
+}
+
 void udelay(unsigned usecs)
 {
-
-	if(1)
-	{
-		NanoSecondDelay(usecs*1000);
-	}
-	else
-	{
-		usecs = (usecs * 33 + 1000 - 33) / 1000;
-
-		writel(0, GPT_CLEAR);
-		writel(0, GPT_ENABLE);
-		while (readl(GPT_COUNT_VAL) != 0);
-
-		writel(GPT_ENABLE_EN, GPT_ENABLE);
-		while (readl(GPT_COUNT_VAL) < usecs);
-
-		writel(0, GPT_ENABLE);
-		writel(0, GPT_CLEAR);
-	}
+	delay_ticks(((usecs * 33 + 1000 - 33) / 1000));
 }
 
 
@@ -180,11 +125,6 @@ VOID Set_DGT_ClrOnMatch(int en)
 	MmioWrite32 (DGT_ENABLE, DATA_NEW);
 }
 
-/*#define GIC_DIST_REG(off)           (MSM_GIC_DIST_BASE + (off))
-#define GIC_DIST_ENABLE_CLEAR       GIC_DIST_REG(0x180)
-
-#define GIC_PPI_START 16
-#define INT_DEBUG_TIMER_EXP     (GIC_PPI_START + 1)*/
 
 //΢��
 UINTN

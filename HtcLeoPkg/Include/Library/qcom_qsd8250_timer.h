@@ -32,10 +32,11 @@ typedef enum handler_return(*platform_timer_callback)(void *arg, time_t now);
 status_t platform_set_periodic_timer(platform_timer_callback callback, void *arg, time_t interval);
 */
 
-//������ʱ
+//inline void delay_ticks(unsigned ticks);
+void delay_ticks(unsigned ticks);
+
 extern void mdelay(unsigned msecs);
 
-//΢����ʱ
 extern void udelay(unsigned usecs);
 /*
 uint32_t platform_tick_rate(void);
