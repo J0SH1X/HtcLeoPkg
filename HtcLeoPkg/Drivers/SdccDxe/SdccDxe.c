@@ -21,7 +21,6 @@
 
   **/
 
-//#include "MMCHS.h"
 #include <Uefi.h>
 
 #include <Library/BaseLib.h>
@@ -36,6 +35,8 @@
 #include <Protocol/DevicePath.h>
 
 #include <Library/MsmSdccLib.h>
+
+#include <Library/qcom_qsd8250_gpio.h>
 
 /*EFI_BLOCK_IO_MEDIA gMMCHSMedia = 
 {
@@ -251,6 +252,7 @@ SdccDxeInitialize(
 	EFI_STATUS  Status = EFI_SUCCESS;
 
 	//ZeroMem(&gCardInfo, sizeof(CARD_INFO));
+	msm_gpio_init();
 
 	SdccLibInitialize();
 
