@@ -40,7 +40,8 @@
   OrderedCollectionLib|MdePkg/Library/BaseOrderedCollectionRedBlackTreeLib/BaseOrderedCollectionRedBlackTreeLib.inf
   ArmLib|ArmPkg/Library/ArmLib/ArmBaseLib.inf
   ArmPlatformLib|HtcLeoPkg/Library/HtcLeoPkgLib/HtcLeoPkgLib.inf
-  TimerLib|HtcLeoPkg/Library/TimerLib/TimerLib.inf
+  #TimerLib|HtcLeoPkg/Library/TimerLib/TimerLib.inf
+  TimerLib|HtcLeoPkg/Library/MsmTargetTimerLib/MsmTargetTimerLib.inf
   CompilerIntrinsicsLib|ArmPkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf
   CapsuleLib|MdeModulePkg/Library/DxeCapsuleLibNull/DxeCapsuleLibNull.inf
   PlatformBootManagerLib|HtcLeoPkg/Library/PlatformBootManagerLib/PlatformBootManagerLib.inf
@@ -78,6 +79,11 @@
   SerialPortLib|HtcLeoPkg/Library/FrameBufferSerialPortLib/FrameBufferSerialPortLib.inf
   MemoryInitPeiLib|HtcLeoPkg/Library/MemoryInitPeiLib/PeiMemoryAllocationLib.inf
   CompilerIntrinsicsLib|ArmPkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf
+
+  # SoC Drivers
+  MsmClockLib|HtcLeoPkg/Library/MsmClockLib/MsmClockLib.inf
+  MsmTargetClockLib|HtcLeoPkg/Library/MsmTargetClockLib/MsmTargetClockLib.inf
+  MsmTargetMmcLib|HtcLeoPkg/Library/MsmTargetMmcLib/MsmTargetMmcLib.inf
 
 [LibraryClasses.common.SEC]
   PrePiLib|EmbeddedPkg/Library/PrePiLib/PrePiLib.inf
@@ -228,6 +234,9 @@
   HtcLeoPkg/Drivers/SimpleFbDxe/SimpleFbDxe.inf
   HtcLeoPkg/Drivers/LogoDxe/LogoDxe.inf
 
+  # Drivers
+  HtcLeoPkg/Drivers/MMCHSDxe/MMCHS.inf
+
   #
   # USB Host Support
   #
@@ -311,7 +320,3 @@
 		gEfiShellPkgTokenSpaceGuid.PcdShellLibAutoInitialize|FALSE
 		gEfiMdePkgTokenSpaceGuid.PcdUefiLibMaxPrintBufferSize|8000
   }
-  
-!ifdef $(INCLUDE_TFTP_COMMAND)
-  ShellPkg/DynamicCommand/TftpDynamicCommand/TftpDynamicCommand.inf
-!endif #$(INCLUDE_TFTP_COMMAND)

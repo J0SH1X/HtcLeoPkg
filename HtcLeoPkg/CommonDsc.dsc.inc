@@ -70,8 +70,6 @@
   PL011UartClockLib|ArmPlatformPkg/Library/PL011UartClockLib/PL011UartClockLib.inf
   PL011UartLib|ArmPlatformPkg/Library/PL011UartLib/PL011UartLib.inf
 
-  TimerLib|HtcLeoPkg/Library/TimerLib/TimerLib.inf
-
   OpsLib|HtcLeoPkg/Library/OpsLib/OpsLib.inf
   InterruptsLib|HtcLeoPkg/Library/InterruptsLib/InterruptsLib.inf
 

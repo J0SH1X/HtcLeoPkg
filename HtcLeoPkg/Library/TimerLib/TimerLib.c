@@ -22,6 +22,10 @@
 
 extern UINT32 TimerBase(INTN Timer);
 
+extern void mdelay(unsigned msecs);
+
+extern void udelay(unsigned usecs);
+
 RETURN_STATUS
 EFIAPI
 TimerConstructor (

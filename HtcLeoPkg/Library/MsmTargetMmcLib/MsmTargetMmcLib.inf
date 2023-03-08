@@ -1,0 +1,32 @@
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = MsmTargetMmcLib
+  FILE_GUID                      = 8f06b9a4-4d69-479d-af13-6df63ca54ae7
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = MsmTargetMmcLib
+
+#
+#  VALID_ARCHITECTURES           = ARM IA32 X64 IPF EBC
+#
+[BuildOptions.ARM]
+  GCC:*_*_*_CC_FLAGS = -Werror -Wno-unused-function -Wno-unused-variable -Wno-shift-count-overflow
+[Sources.common]
+  mmc.c
+  mmcxxx.c
+
+[Packages]
+  EmbeddedPkg/EmbeddedPkg.dec
+  MdePkg/MdePkg.dec
+  ArmPkg/ArmPkg.dec
+  HtcLeoPkg/HtcLeoPkg.dec
+
+[LibraryClasses]
+  DebugLib
+  IoLib
+  ArmLib
+
+[Pcd]
+
+
