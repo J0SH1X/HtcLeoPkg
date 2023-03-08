@@ -97,5 +97,6 @@ extern void udelay(unsigned usecs);
 
 #define __UNUSED //added
 typedef int bool;//added
+typedef int status_t;//added
 
 #endif

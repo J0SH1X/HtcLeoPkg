@@ -62,9 +62,15 @@
 #ifndef __MMC_H
 #define __MMC_H
 
-#include "list.h"
-//#include <lib/part.h>
+//#include "list.h"
+#include "part.h"
+#include "qcom_lk.h"
 #include "lk_types.h"
+
+struct list_node {
+	struct list_node *prev;
+	struct list_node *next;
+};
 
 // Choose the SD controller to use. SDC1, 2, 3, or 4.
 #define SDC_INSTANCE  2

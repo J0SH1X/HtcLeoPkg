@@ -84,6 +84,7 @@
   MsmPcomLib|HtcLeoPkg/Library/MsmPcomLib/MsmPcomLib.inf
   MsmClockLib|HtcLeoPkg/Library/MsmClockLib/MsmClockLib.inf
   MsmTargetClockLib|HtcLeoPkg/Library/MsmTargetClockLib/MsmTargetClockLib.inf
+  MsmTargetGpioLib|HtcLeoPkg/Library/MsmTargetGpioLib/MsmTargetGpioLib.inf
   MsmTargetMmcLib|HtcLeoPkg/Library/MsmTargetMmcLib/MsmTargetMmcLib.inf
 
 [LibraryClasses.common.SEC]
@@ -237,6 +238,7 @@
 
   # Drivers
   HtcLeoPkg/Drivers/ClockDxe/ClockDxe.inf
+  HtcLeoPkg/Drivers/SdccDxe/SdccDxe.inf
 
   #
   # USB Host Support
