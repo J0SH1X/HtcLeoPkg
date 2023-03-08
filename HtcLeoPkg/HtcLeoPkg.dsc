@@ -237,7 +237,6 @@
   HtcLeoPkg/Drivers/LogoDxe/LogoDxe.inf
 
   # Drivers
-  HtcLeoPkg/Drivers/ClockDxe/ClockDxe.inf
   HtcLeoPkg/Drivers/SdccDxe/SdccDxe.inf
 
   #

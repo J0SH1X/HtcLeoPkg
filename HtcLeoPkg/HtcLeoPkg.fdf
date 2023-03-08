@@ -189,7 +189,6 @@ APRIORI DXE {
   INF MdeModulePkg/Universal/BdsDxe/BdsDxe.inf
   INF MdeModulePkg/Application/UiApp/UiApp.inf
   INF HtcLeoPkg/Drivers/LogoDxe/LogoDxe.inf
-  INF HtcLeoPkg/Drivers/ClockDxe/ClockDxe.inf
   INF HtcLeoPkg/Drivers/SdccDxe/SdccDxe.inf
 
   #
