@@ -13,17 +13,16 @@
 
 [Defines]
   INF_VERSION                    = 0x00010005
-  BASE_NAME                      = SDCCDxe
-  FILE_GUID                      = A9AE7F06-35A1-40AF-A894-7CF3BA488B2D
-  MODULE_TYPE                    = DXE_DRIVER
+  BASE_NAME                      = MsmSdccLib
+  FILE_GUID                      = A9AE7F06-35A1-40AF-A894-7CF3BA488B2E
+  MODULE_TYPE                    = BASE
   VERSION_STRING                 = 1.0
-
-  ENTRY_POINT                    = SdccDxeInitialize
+  LIBRARY_CLASS                  = MsmSdccLib
 
 [BuildOptions.ARM]
   GCC:*_*_*_CC_FLAGS = -Wno-unused-function -Wno-unused-variable -Wno-shift-count-overflow -Wno-implicit-function-declaration -Wno-missing-braces
 [Sources.common]
-  SdccDxe.c
+  MsmSdccLib.c
 
 [Packages]
   ArmPkg/ArmPkg.dec
@@ -51,7 +50,7 @@
   MsmTargetMmcLib
   MsmTargetGpioLib
   MsmPcomClientLib
-  MsmSdccLib
+  
   # MsmTargetLib
   TimerLib
 

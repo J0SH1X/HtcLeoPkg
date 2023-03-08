@@ -90,6 +90,7 @@
   MsmTargetClockLib|HtcLeoPkg/Library/MsmTargetClockLib/MsmTargetClockLib.inf
   MsmTargetGpioLib|HtcLeoPkg/Library/MsmTargetGpioLib/MsmTargetGpioLib.inf
   MsmTargetMmcLib|HtcLeoPkg/Library/MsmTargetMmcLib/MsmTargetMmcLib.inf
+  MsmSdccLib|HtcLeoPkg/Library/MsmSdccLib/MsmSdccLib.inf
 
 [LibraryClasses.common.SEC]
   PrePiLib|EmbeddedPkg/Library/PrePiLib/PrePiLib.inf
