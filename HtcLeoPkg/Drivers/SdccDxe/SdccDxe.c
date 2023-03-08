@@ -34,11 +34,22 @@
 #include <Protocol/BlockIo.h>
 #include <Protocol/DevicePath.h>
 
+#include <Library/qcom_lk.h>
+#include <Library/list.h>
+#include <Library/part.h>
+#include <Library/mmc.h>
+#include <Library/reg.h>
+#include <Library/adm.h>
 #include <Library/MsmSdccLib.h>
 
 #include <Library/qcom_qsd8250_gpio.h>
+#include <Library/qcom_qsd8250_iomap.h>
 
-/*EFI_BLOCK_IO_MEDIA gMMCHSMedia = 
+mmc_t *mmc;
+mmc_cmd_t *cmd;
+mmc_data_t *data;
+
+EFI_BLOCK_IO_MEDIA gMMCHSMedia = 
 {
 	SIGNATURE_32('e', 'm', 'm', 'c'),         // MediaId
 	FALSE,                                    // RemovableMedia
@@ -75,7 +86,7 @@ MMCHS_DEVICE_PATH gMmcHsDevicePath =
 			0 
 		}
 	}
-};*/
+};
 
 
 
@@ -89,7 +100,7 @@ MMCHS_DEVICE_PATH gMmcHsDevicePath =
   @retval EFI_DEVICE_ERROR     The device is not functioning properly and could
   not be reset.
   **/
-/*EFI_STATUS
+EFI_STATUS
 EFIAPI
 MMCHSReset(
 	IN EFI_BLOCK_IO_PROTOCOL          *This,
@@ -98,7 +109,7 @@ MMCHSReset(
 {
 	
 	return EFI_SUCCESS;
-}*/
+}
 
 
 /**
@@ -124,7 +135,7 @@ MMCHSReset(
   EFI_STATUS
 
   **/
-/*EFI_STATUS
+EFI_STATUS
 EFIAPI
 MMCHSReadBlocks(
 	IN EFI_BLOCK_IO_PROTOCOL          *This,
@@ -140,9 +151,13 @@ MMCHSReadBlocks(
 
 	OldTpl = gBS->RaiseTPL(TPL_NOTIFY);
 
-	ret = mmc_read(gMMCHSMedia.BlockSize * Lba, (UINT32 *)Buffer,BufferSize);
+	cmd->cmdarg = MMC_DATA_READ;
+
+	//ret = mmc_read(gMMCHSMedia.BlockSize * Lba, (UINT32 *)Buffer,BufferSize);
+	ret = sdcc_read_data(mmc, cmd, data);//(mmc, cmd, data)
 	
-	if(ret != MMC_BOOT_E_SUCCESS)
+	//if(ret != MMC_BOOT_E_SUCCESS)
+	if(ret != SDCC_ERR_GENERIC)//check
 	{
 		Status = EFI_DEVICE_ERROR;
 	}
@@ -150,7 +165,7 @@ MMCHSReadBlocks(
 	gBS->RestoreTPL(OldTpl);
 	
 	return Status;
-}*/
+}
 
 
 /**
@@ -173,7 +188,7 @@ MMCHSReadBlocks(
   or the buffer is not on proper alignment.
 
   **/
-/*EFI_STATUS
+EFI_STATUS
 EFIAPI
 MMCHSWriteBlocks(
 	IN EFI_BLOCK_IO_PROTOCOL          *This,
@@ -189,18 +204,20 @@ MMCHSWriteBlocks(
 
 	OldTpl = gBS->RaiseTPL(TPL_NOTIFY);
 
-	ret = mmc_write(gMMCHSMedia.BlockSize * Lba, BufferSize, (UINT32 *)Buffer);
+	/*ret = mmc_write(gMMCHSMedia.BlockSize * Lba, BufferSize, (UINT32 *)Buffer);
 	
 	if(ret != MMC_BOOT_E_SUCCESS)
 	{
 		Status = EFI_DEVICE_ERROR;
 	}
 
+	Write isn't implemented yet */
+
 	gBS->RestoreTPL(OldTpl);
 	
 	return Status;
 
-}*/
+}
 
 
 /**
@@ -212,7 +229,7 @@ MMCHSWriteBlocks(
   @retval EFI_NO_MEDIA      There is no media in the device.
 
   **/
-/*EFI_STATUS
+EFI_STATUS
 EFIAPI
 MMCHSFlushBlocks(
 	IN EFI_BLOCK_IO_PROTOCOL  *This
@@ -241,7 +258,7 @@ static unsigned mmc_sdc_base[] =
 
 extern struct mmc_host mmc_host;
 extern struct mmc_card mmc_card;
-*/
+
 EFI_STATUS
 EFIAPI
 SdccDxeInitialize(
@@ -256,41 +273,56 @@ SdccDxeInitialize(
 
 	SdccLibInitialize();
 
-	//unsigned base_addr;
-	//unsigned char slot;
-	
+	unsigned base_addr;
+	unsigned char slot;
 
-	/* Trying Slot 1 first */
-	/*slot = 1;
+/* start of ugly stuff */
+	mmc_t htcleo_mmc;
+    sd_parms_t htcleo_sdcc;
+
+    htcleo_sdcc.instance           	= 	2;
+	htcleo_sdcc.base                = 	MSM_SDC2_BASE;//SDC2_BASE
+	htcleo_sdcc.ns_addr             = 	SDC2_NS_REG;
+	htcleo_sdcc.md_addr             = 	SDC2_MD_REG;
+	htcleo_sdcc.row_reset_mask      = 	ROW_RESET__SDC2___M;
+	htcleo_sdcc.glbl_clk_ena_mask   = 	GLBL_CLK_ENA__SDC2_H_CLK_ENA___M;
+	htcleo_sdcc.adm_crci_num        = 	ADM_CRCI_SDC2;
+
+    htcleo_mmc.priv      	= 	&htcleo_sdcc;
+	htcleo_mmc.voltages  	= 	SDCC_VOLTAGE_SUPPORTED;
+	htcleo_mmc.f_min     	= 	MCLK_400KHz;
+	htcleo_mmc.f_max     	= 	MCLK_48MHz;
+	htcleo_mmc.host_caps 	= 	MMC_MODE_4BIT |
+								MMC_MODE_HS |
+								MMC_MODE_HS_52MHz;
+	htcleo_mmc.read_bl_len	= 	512;
+	htcleo_mmc.write_bl_len	= 	512;
+	htcleo_mmc.send_cmd  	= 	sdcc_send_cmd;
+	htcleo_mmc.set_ios   	= 	sdcc_set_ios;
+	htcleo_mmc.init      	= 	sdcc_init;
+
+    mmc_register(&htcleo_mmc);
+    //mmc_init(&htcleo_mmc);
+/* end of ugly stuff */
+
+	/* Trying Slot 2 first */
+	slot = 2;
 	base_addr = mmc_sdc_base[slot - 1];
-	if (mmc_boot_main(slot, base_addr))
+	if (mmc_init(&htcleo_mmc))
 	{
 
-		DEBUG((EFI_D_ERROR, "MMCHSInitialize eMMC slot 1 init failed!\n"));*/
-		
-		/* Trying Slot 3 next */
-/*		slot = 3;
-		base_addr = mmc_sdc_base[slot - 1];
-		if (mmc_boot_main(slot, base_addr))
-		{
-			DEBUG((EFI_D_ERROR, "MMCHSInitialize eMMC slot 3 init failed!\n"));
-			return EFI_DEVICE_ERROR;
-		}
-		else
-		{
-			DEBUG((EFI_D_ERROR, "MMCHSInitialize eMMC slot 3 init ok!\n"));
-		}
+		DEBUG((EFI_D_ERROR, "MMCHSInitialize eMMC slot 2 init ok!\n"));
 	}
 	else
 	{
-		DEBUG((EFI_D_ERROR, "MMCHSInitialize eMMC slot 1 init ok!\n"));
+		DEBUG((EFI_D_ERROR, "MMCHSInitialize eMMC slot 2 init failed\n"));
 	}
 	
-	gMMCHSMedia.LastBlock = (UINT64)((mmc_card.capacity / 512) - 1);
+	//gMMCHSMedia.LastBlock = (UINT64)((mmc_card.capacity / 512) - 1);//where to get the capacity?
 
 	{
 		UINT32 blocksize;
-		blocksize = mmc_get_device_blocksize();
+		blocksize = 512;//mmc_get_device_blocksize();
 
 		DEBUG((EFI_D_INFO, "eMMC Block Size:%d\n", blocksize));
 
@@ -304,9 +336,13 @@ SdccDxeInitialize(
 		}
 
 		int ret = 0;
-		ret = mmc_read(blocksize, (UINT32 *)data, blocksize);
-		
-		if (ret != MMC_BOOT_E_SUCCESS)
+
+		cmd->cmdarg = MMC_DATA_READ;
+		//ret = sdcc_read_data(blocksize, (UINT32 *)data, blocksize);//(mmc, cmd, data), incorrect format for now :-)
+		ret = sdcc_read_data(mmc, cmd, data);//use  sdcc_send_cmd??
+
+		//if (ret != MMC_BOOT_E_SUCCESS)
+		if (ret == SDCC_ERR_GENERIC)
 		{
 			DEBUG((EFI_D_INFO, "mmc_read failed! ret = %d\n", ret));
 			return EFI_DEVICE_ERROR;
@@ -315,8 +351,6 @@ SdccDxeInitialize(
 		UINT8 * STR = (UINT8 *)data;
 
 		DEBUG((EFI_D_INFO, "First 8 Bytes = %c%c%c%c%c%c%c%c\n", STR[0], STR[1], STR[2], STR[3], STR[4], STR[5], STR[6], STR[7]));
-
-
 
 		Status = gBS->FreePool(data);
 	}
@@ -328,6 +362,6 @@ SdccDxeInitialize(
 		&gEfiBlockIoProtocolGuid, &gBlockIo,
 		&gEfiDevicePathProtocolGuid, &gMmcHsDevicePath,
 		NULL
-		);*/
+		);
 	return Status;
 }

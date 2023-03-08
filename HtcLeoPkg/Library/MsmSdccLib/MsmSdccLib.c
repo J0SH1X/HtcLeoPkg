@@ -521,34 +521,7 @@ SdccLibInitialize(
 {
     EFI_STATUS Status = EFI_SUCCESS;
 
-    mmc_t htcleo_mmc;
-    sd_parms_t htcleo_sdcc;
-
-    htcleo_sdcc.instance           	= 	2;
-	htcleo_sdcc.base                = 	SDC2_BASE;
-	htcleo_sdcc.ns_addr             = 	SDC2_NS_REG;
-	htcleo_sdcc.md_addr             = 	SDC2_MD_REG;
-	htcleo_sdcc.row_reset_mask      = 	ROW_RESET__SDC2___M;
-	htcleo_sdcc.glbl_clk_ena_mask   = 	GLBL_CLK_ENA__SDC2_H_CLK_ENA___M;
-	htcleo_sdcc.adm_crci_num        = 	ADM_CRCI_SDC2;
-
-    htcleo_mmc.priv      	= 	&htcleo_sdcc;
-	htcleo_mmc.voltages  	= 	SDCC_VOLTAGE_SUPPORTED;
-	htcleo_mmc.f_min     	= 	MCLK_400KHz;
-	htcleo_mmc.f_max     	= 	MCLK_48MHz;
-	htcleo_mmc.host_caps 	= 	MMC_MODE_4BIT |
-								MMC_MODE_HS |
-								MMC_MODE_HS_52MHz;
-	htcleo_mmc.read_bl_len	= 	512;
-	htcleo_mmc.write_bl_len	= 	512;
-	htcleo_mmc.send_cmd  	= 	sdcc_send_cmd;
-	htcleo_mmc.set_ios   	= 	sdcc_set_ios;
-	htcleo_mmc.init      	= 	sdcc_init;
-
-	msm_clock_init();
-
-    mmc_register(&htcleo_mmc);
-    mmc_init(&htcleo_mmc);
+    msm_clock_init();
 
     return Status;
 }
