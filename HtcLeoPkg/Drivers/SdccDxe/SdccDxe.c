@@ -16,13 +16,16 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 02110-1301, USA.
 */
 
-#include "SdccDxe.h"
-#include <Library/mmc.h>
 #include <Library/reg.h>
 #include <Library/adm.h>
-//#include <Library/qcom_lk.h>
+#include <Library/pcom_clients.h>
 #include <Library/qcom_qsd8250_timer.h>
 #include <Library/qcom_qsd8250_clock.h>
+
+#include <Library/qcom_lk.h>
+#include <Library/list.h>
+#include <Library/part.h>
+#include <Library/mmc.h>
 
 /*#include <debug.h>
 #include <reg.h>
@@ -39,6 +42,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 #else
 	#include <platform/gpio.h>
 #endif*/
+
+int  mmc_is_ready; // Will be set to 1 if sdcard is ready
 
 static unsigned char sdcc_use_dm = 1;
 // Structures for use with ADM
@@ -487,7 +492,7 @@ int sdcc_init(mmc_t *mmc)
 	
     // Initialize controller
     sdcc_controller_init(sd);
-	mmc_ready = 1;
+	mmc_is_ready = 1;
 	
     return 0;
 }
@@ -502,9 +507,34 @@ SdccDxeInitialize(
 {
 	EFI_STATUS  Status = EFI_SUCCESS;
 
+    mmc_t htcleo_mmc;
+    sd_parms_t htcleo_sdcc;
+
+    htcleo_sdcc.instance           	= 	2;
+	htcleo_sdcc.base                = 	SDC2_BASE;
+	htcleo_sdcc.ns_addr             = 	SDC2_NS_REG;
+	htcleo_sdcc.md_addr             = 	SDC2_MD_REG;
+	htcleo_sdcc.row_reset_mask      = 	ROW_RESET__SDC2___M;
+	htcleo_sdcc.glbl_clk_ena_mask   = 	GLBL_CLK_ENA__SDC2_H_CLK_ENA___M;
+	htcleo_sdcc.adm_crci_num        = 	ADM_CRCI_SDC2;
+
+    htcleo_mmc.priv      	= 	&htcleo_sdcc;
+	htcleo_mmc.voltages  	= 	SDCC_VOLTAGE_SUPPORTED;
+	htcleo_mmc.f_min     	= 	MCLK_400KHz;
+	htcleo_mmc.f_max     	= 	MCLK_48MHz;
+	htcleo_mmc.host_caps 	= 	MMC_MODE_4BIT |
+								MMC_MODE_HS |
+								MMC_MODE_HS_52MHz;
+	htcleo_mmc.read_bl_len	= 	512;
+	htcleo_mmc.write_bl_len	= 	512;
+	htcleo_mmc.send_cmd  	= 	sdcc_send_cmd;
+	htcleo_mmc.set_ios   	= 	sdcc_set_ios;
+	htcleo_mmc.init      	= 	sdcc_init;
+
 	msm_clock_init();
 
-	/* Card init here */
+    mmc_register(&htcleo_mmc);
+    mmc_init(&htcleo_mmc);
 	
 	return Status;
 }

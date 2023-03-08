@@ -31,23 +31,23 @@
 #include <Library/PcdLib.h>
 #include <Library/BaseMemoryLib.h>
 
+#include <Uefi.h>
+#include <Library/UefiBootServicesTableLib.h>
+
 #include <Library/qcom_lk.h>
-#include <Library/mmc.h>
+#include <Library/list.h>
 #include <Library/part.h>
+#include <Library/mmc.h>
 
 #include <Library/qcom_qsd8250_iomap.h>
 #include <Library/qcom_qsd8250_irqs.h>
 #include <Library/qcom_qsd8250_clock.h>
-
-
-/*#include <Library/qcom_clock.h>
-#include <Library/qcom_clock_pll.h>
-#include <Library/qcom_clock_local.h>
-
-#include <Library/qcom_mmc.h>
-*/
-
 #include <Library/qcom_qsd8250_timer.h>
+
+mmc_t htcleo_mmc;
+sd_parms_t htcleo_sdcc;
+
+int  mmc_ready; // Will be set to 1 if sdcard is ready
 
 
 static struct list_node mmc_devices;
@@ -78,7 +78,7 @@ mmc_t *find_mmc_device(int dev_num)
 			return m;
 	}
 
-	printf("MMC Device %d not found\n", dev_num);
+	//printf("MMC Device %d not found\n", dev_num);
 
 	return NULL;
 }
@@ -95,7 +95,7 @@ ulong _mmc_bwrite(int dev_num, ulong start, ulong blkcnt, const void *src)
 
 	err = mmc_set_blocklen(mmc, mmc->write_bl_len);
 	if (err) {
-		printf("set write bl len failed\n\r");
+		//printf("set write bl len failed\n\r");
 		return err;
 	}
 
@@ -121,7 +121,7 @@ ulong _mmc_bwrite(int dev_num, ulong start, ulong blkcnt, const void *src)
 
 	err = mmc_send_cmd(mmc, &cmd, &data);
 	if (err) {
-		printf("mmc write failed\n\r");
+		//printf("mmc write failed\n\r");
 		return err;
 	}
 
@@ -211,7 +211,7 @@ int _mmc_read(mmc_t *mmc, UINT64 src, uchar *dst, int size)
 	buffer = malloc(blklen);
 
 	if (!buffer) {
-		printf("Could not allocate buffer for MMC read!\n");
+		//printf("Could not allocate buffer for MMC read!\n");
 		return -1;
 	}
 
@@ -243,7 +243,8 @@ int _mmc_read(mmc_t *mmc, UINT64 src, uchar *dst, int size)
 	}
 
 free_buffer:
-	free(buffer);
+	gBS->FreePool(buffer);
+	//free(buffer);
 
 	return err;
 }
@@ -261,7 +262,7 @@ ulong _mmc_bread(int dev_num, ulong start, ulong blkcnt, void *dst)
 	// We always do full block reads from the card
 	err = mmc_set_blocklen(mmc, blklen);
 	if (err) {
-		printf("set read bl len failed err = %d\n\r", err);
+		//printf("set read bl len failed err = %d\n\r", err);
 		return 0;
 	}
 #ifdef CONFIG_GENERIC_MMC_MULTI_BLOCK_READ
@@ -287,7 +288,7 @@ ulong _mmc_bread(int dev_num, ulong start, ulong blkcnt, void *dst)
 
 	err = mmc_send_cmd(mmc, &cmd, &data);
 	if (err) {
-		printf("mmc read failed err= %d\n\r", err);
+		//printf("mmc read failed err= %d\n\r", err);
 		return 0;
 	}
 	
@@ -300,7 +301,7 @@ ulong _mmc_bread(int dev_num, ulong start, ulong blkcnt, void *dst)
 
 		stoperr = mmc_send_cmd(mmc, &cmd, NULL);
 		if (stoperr) {
-			printf("mmc stop read failed err = %d\n\r",stoperr);
+			//printf("mmc stop read failed err = %d\n\r",stoperr);
 			return 0;
 		}
 	}
@@ -308,7 +309,7 @@ ulong _mmc_bread(int dev_num, ulong start, ulong blkcnt, void *dst)
 	for (unsigned i = start; i < start + blkcnt; i++, dst += mmc->read_bl_len) {
 		err = mmc_read_block(mmc, dst, i);
 		if (err) {
-			printf("block read failed: %d\n", err);
+			//printf("block read failed: %d\n", err);
 			return i - start;
 		}
 	}
@@ -887,13 +888,13 @@ int mmc_startup(mmc_t *mmc)
 	mmc->block_dev.type = 0;
 	mmc->block_dev.blksz = mmc->read_bl_len;
 	mmc->block_dev.lba = lldiv(mmc->capacity, mmc->read_bl_len);
-	sprintf(mmc->block_dev.vendor, "Man %06x Snr %08x", mmc->cid[0] >> 8,
+	/*sprintf(mmc->block_dev.vendor, "Man %06x Snr %08x", mmc->cid[0] >> 8,
 			(mmc->cid[2] << 8) | (mmc->cid[3] >> 24));
 	sprintf(mmc->block_dev.product, "%c%c%c%c%c", mmc->cid[0] & 0xff,
 			(mmc->cid[1] >> 24), (mmc->cid[1] >> 16) & 0xff,
 			(mmc->cid[1] >> 8) & 0xff, mmc->cid[1] & 0xff);
 	sprintf(mmc->block_dev.revision, "%d.%d", mmc->cid[2] >> 28,
-			(mmc->cid[2] >> 24) & 0xf);
+			(mmc->cid[2] >> 24) & 0xf);*/
 	mmc->block_dev.part_type = PART_TYPE_DOS;
 	mmc_ready = 1;
 	
@@ -971,7 +972,7 @@ int mmc_init(mmc_t *mmc)
 	if (err == TIMEOUT) {
 		err = mmc_send_op_cond(mmc);
 		if (err) {
-			printf("Card did not respond to voltage select!\n");
+			//printf("Card did not respond to voltage select!\n");
 			return UNUSABLE_ERR;
 		}
 	}

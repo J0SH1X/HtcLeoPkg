@@ -13,8 +13,8 @@
 [BuildOptions.ARM]
   GCC:*_*_*_CC_FLAGS = -Werror -Wno-unused-function -Wno-unused-variable -Wno-shift-count-overflow
 [Sources.common]
-  #mmc.c
-  mmcxxx.c
+  mmc.c
+  #mmcxxx.c
 
 [Packages]
   EmbeddedPkg/EmbeddedPkg.dec
@@ -26,6 +26,8 @@
   DebugLib
   IoLib
   ArmLib
+  CompilerIntrinsicsLib
+  UefiBootServicesTableLib
 
 [Pcd]
 

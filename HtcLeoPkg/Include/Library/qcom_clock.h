@@ -39,7 +39,7 @@
 #define readl_relaxed readl
 #define writel_relaxed writel
 #endif
-typedef int bool;
+typedef BOOLEAN bool;
 
 enum clk_reset_action 
 {

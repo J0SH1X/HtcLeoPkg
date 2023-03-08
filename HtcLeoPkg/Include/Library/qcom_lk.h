@@ -1,6 +1,22 @@
 #ifndef QCOM_LK_COMMON_H
 #define QCOM_LK_COMMON_H
 
+typedef INT8 int8_t;
+typedef INT16 int16_t;
+typedef INT32 int32_t;
+typedef INT64 int64_t;
+
+typedef UINT8 uint8_t;
+typedef UINT16 uint16_t;
+typedef UINT32 uint32_t;
+typedef UINT64 uint64_t;
+
+typedef UINTN size_t;
+typedef BOOLEAN bool;
+typedef BOOLEAN status_t;//typedef int status_t;//added
+typedef UINTN addr_t;
+typedef UINTN paddr_t;
+
 #ifndef offsetof
 #define offsetof(TYPE, MEMBER) ((size_t)&((TYPE *)0)->MEMBER)
 #endif
@@ -14,9 +30,7 @@
 #define ROUND_TO_PAGE(x,y) (((x) + (y)) & (~(y)))
 #endif
 
-#ifndef size_t
-#define size_t unsigned int
-#endif
+
 
 #define ERR_INVALID_ARGS -8
 
@@ -96,7 +110,10 @@ extern void udelay(unsigned usecs);
 #define RMWREG8(addr, startbit, width, val) *REG8(addr) = (*REG8(addr) & ~(((1<<(width)) - 1) << (startbit))) | ((val) << (startbit))
 
 #define __UNUSED //added
-typedef int bool;//added
-typedef int status_t;//added
+
+#define true TRUE
+#define false FALSE
+
+#define memcpy(d,s,n) CopyMem ((d), (s), (n))
 
 #endif

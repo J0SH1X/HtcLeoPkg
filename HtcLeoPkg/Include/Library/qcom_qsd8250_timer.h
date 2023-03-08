@@ -23,7 +23,7 @@
 #ifndef __PLATFORM_TIMER_H
 #define __PLATFORM_TIMER_H
 
-typedef int status_t;
+//typedef int status_t;
 typedef unsigned long long bigtime_t;
 
 /*

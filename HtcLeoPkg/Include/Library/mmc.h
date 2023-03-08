@@ -62,15 +62,10 @@
 #ifndef __MMC_H
 #define __MMC_H
 
-//#include "list.h"
-#include "part.h"
 #include "qcom_lk.h"
 #include "lk_types.h"
 
-struct list_node {
-	struct list_node *prev;
-	struct list_node *next;
-};
+extern char *malloc();//added
 
 // Choose the SD controller to use. SDC1, 2, 3, or 4.
 #define SDC_INSTANCE  2
@@ -79,7 +74,7 @@ struct list_node {
 #define CONFIG_DOS_PARTITION
 #define CONFIG_GENERIC_MMC_MULTI_BLOCK_READ
 
-#define USE_PROC_COMM
+//#define USE_PROC_COMM -> removed
 #define USE_DM
 #define USE_HIGH_SPEED_MODE
 #define USE_4_BIT_BUS_MODE
@@ -438,10 +433,7 @@ typedef struct sd_parms {
    UINT32 adm_ch8_rslt_conf_initial; // Initial value of HI0_CH8_RSLT_CONF_SD3                                  
 }sd_parms_t;
 
-mmc_t htcleo_mmc;
-sd_parms_t htcleo_sdcc;
 
-int  mmc_ready; // Will be set to 1 if sdcard is ready
 
 int  sdcc_init(mmc_t *mmc);
 void sdcc_set_ios(mmc_t *mmc);

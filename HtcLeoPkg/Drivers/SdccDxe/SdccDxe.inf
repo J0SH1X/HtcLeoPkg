@@ -45,12 +45,13 @@
   DebugLib
   UefiBootServicesTableLib
 
+  AdmLib
   MsmTargetClockLib
-  MsmClockLib #Added
-  MsmTargetGpioLib
-  # MsmTargetLib
+  #MsmClockLib #Added
   MsmTargetMmcLib
-  
+  MsmTargetGpioLib
+  MsmPcomClientLib
+  # MsmTargetLib
   TimerLib
 
 [Guids]

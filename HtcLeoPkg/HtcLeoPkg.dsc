@@ -80,9 +80,13 @@
   MemoryInitPeiLib|HtcLeoPkg/Library/MemoryInitPeiLib/PeiMemoryAllocationLib.inf
   CompilerIntrinsicsLib|ArmPkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf
 
-  # SoC Drivers
+  # LK libs
+  AdmLib|HtcLeoPkg/Library/AdmLib/AdmLib.inf
   MsmPcomLib|HtcLeoPkg/Library/MsmPcomLib/MsmPcomLib.inf
-  MsmClockLib|HtcLeoPkg/Library/MsmClockLib/MsmClockLib.inf
+  MsmPcomClientLib|HtcLeoPkg/Library/MsmPcomClientLib/MsmPcomClientLib.inf
+
+  # SoC Drivers
+  #MsmClockLib|HtcLeoPkg/Library/MsmClockLib/MsmClockLib.inf
   MsmTargetClockLib|HtcLeoPkg/Library/MsmTargetClockLib/MsmTargetClockLib.inf
   MsmTargetGpioLib|HtcLeoPkg/Library/MsmTargetGpioLib/MsmTargetGpioLib.inf
   MsmTargetMmcLib|HtcLeoPkg/Library/MsmTargetMmcLib/MsmTargetMmcLib.inf

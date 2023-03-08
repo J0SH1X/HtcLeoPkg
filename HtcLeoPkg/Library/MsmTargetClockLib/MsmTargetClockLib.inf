@@ -28,7 +28,7 @@
   DebugLib
   IoLib
   ArmLib
-  MsmClockLib
+  #MsmClockLib
   MsmPcomLib
   TimerLib
 

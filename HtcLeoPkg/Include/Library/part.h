@@ -63,7 +63,7 @@ typedef struct block_dev_desc {
 	unsigned long   (*block_erase)(int dev, unsigned long start, unsigned long blkcnt);
 	void			*priv;			/* driver private struct pointer */
 } block_dev_desc_t;
-block_dev_desc_t mmc_dev;
+//block_dev_desc_t mmc_dev;
 block_dev_desc_t* mmc_get_dev(int dev);
 
 /* device types */
