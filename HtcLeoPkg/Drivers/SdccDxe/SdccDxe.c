@@ -44,6 +44,7 @@
 
 #include <Library/qcom_qsd8250_gpio.h>
 #include <Library/qcom_qsd8250_iomap.h>
+#include <Library/qcom_qsd8250_clock.h>
 
 mmc_t *mmc;
 mmc_cmd_t *cmd;
@@ -269,12 +270,18 @@ SdccDxeInitialize(
 	EFI_STATUS  Status = EFI_SUCCESS;
 
 	//ZeroMem(&gCardInfo, sizeof(CARD_INFO));
+
+	DEBUG((EFI_D_ERROR, "Gpio init start\n"));
 	msm_gpio_init();
 
-	SdccLibInitialize();
+	DEBUG((EFI_D_ERROR, "Gpio init done!\n"));
 
-	unsigned base_addr;
-	unsigned char slot;
+
+	DEBUG((EFI_D_ERROR, "Clock init start\n"));
+	msm_clock_init();
+	DEBUG((EFI_D_ERROR, "Clock init done!\n"));
+
+	SdccLibInitialize();
 
 /* start of ugly stuff */
 	mmc_t htcleo_mmc;
@@ -302,12 +309,12 @@ SdccDxeInitialize(
 	htcleo_mmc.init      	= 	sdcc_init;
 
     mmc_register(&htcleo_mmc);
-    //mmc_init(&htcleo_mmc);
 /* end of ugly stuff */
 
 	/* Trying Slot 2 first */
-	slot = 2;
-	base_addr = mmc_sdc_base[slot - 1];
+
+	DEBUG((EFI_D_ERROR, "mmc init start\n"));
+
 	if (mmc_init(&htcleo_mmc))
 	{
 
@@ -338,11 +345,11 @@ SdccDxeInitialize(
 		int ret = 0;
 
 		cmd->cmdarg = MMC_DATA_READ;
-		//ret = sdcc_read_data(blocksize, (UINT32 *)data, blocksize);//(mmc, cmd, data), incorrect format for now :-)
+		//ret = sdcc_read_data(blocksize, (UINT32 *)data, blocksize);
 		ret = sdcc_read_data(mmc, cmd, data);//use  sdcc_send_cmd??
 
 		//if (ret != MMC_BOOT_E_SUCCESS)
-		if (ret == SDCC_ERR_GENERIC)
+		if (ret == SDCC_ERR_GENERIC)//check
 		{
 			DEBUG((EFI_D_INFO, "mmc_read failed! ret = %d\n", ret));
 			return EFI_DEVICE_ERROR;

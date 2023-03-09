@@ -44,7 +44,6 @@
 //https://github.com/groeck/coreboot/blob/a234f45601e6e85a5179ec9cc446f070b86f425b/src/soc/qualcomm/ipq806x/timer.c
 
 
-//inline void delay_ticks(unsigned ticks)
 void delay_ticks(unsigned ticks)
 {
 	ticks += readl(GPT_COUNT_VAL);
@@ -69,7 +68,6 @@ TimerConstructor (
   VOID
   )
 {
-	//DEBUG ((EFI_D_ERROR, "TimerLib:TimerConstructor\n"));
 	return EFI_SUCCESS;
 }
 

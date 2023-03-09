@@ -42,22 +42,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 
 #include <Library/MsmSdccLib.h>
 
-/*#include <debug.h>
-#include <reg.h>
-#include <malloc.h>
-#include <mmc.h>
-#include <adm.h>
-#include <target/clock.h>
-#include <target/reg.h>
-#include <platform/timer.h>
-
-#ifdef USE_PROC_COMM
-	#include <pcom.h>
-	#include <pcom_clients.h>
-#else
-	#include <platform/gpio.h>
-#endif*/
-
 int  mmc_is_ready; // Will be set to 1 if sdcard is ready
 
 static unsigned char sdcc_use_dm = 1;
@@ -520,8 +504,6 @@ SdccLibInitialize(
 )
 {
     EFI_STATUS Status = EFI_SUCCESS;
-
-    msm_clock_init();
 
     return Status;
 }
