@@ -80,22 +80,12 @@ MicroSecondDelay (
   IN  UINTN MicroSeconds
   )
 {
-	UINT64  NanoSeconds;
-	//DEBUG ((EFI_D_ERROR, "TimerLib:MicroSecondDelay MicroSeconds=%d start\n",MicroSeconds));
-	NanoSeconds = MultU64x32(MicroSeconds, 1000);
-
-	while (NanoSeconds > (UINTN)-1) { 
-		NanoSecondDelay((UINTN)-1);
-		NanoSeconds -= (UINTN)-1;
-	}
-	
-	NanoSecondDelay(NanoSeconds);
-	//DEBUG ((EFI_D_ERROR, "TimerLib:MicroSecondDelay MicroSeconds=%d end\n",MicroSeconds));
+	mdelay(MicroSeconds);
 	return MicroSeconds;
 }
 
 
-VOID Set_DGT_Enable(int en)
+/*VOID Set_DGT_Enable(int en)
 {
 	UINT32 DATA = MmioRead32(DGT_ENABLE);
 	UINT32 DATA_NEW;
@@ -123,78 +113,17 @@ VOID Set_DGT_ClrOnMatch(int en)
 		DATA_NEW = DATA & ~(1 << 1);
 	}
 	MmioWrite32 (DGT_ENABLE, DATA_NEW);
-}
+}*/
 
 
-//΢��
 UINTN
 EFIAPI
 NanoSecondDelay (
   IN  UINTN NanoSeconds
   )
 {
-	//DEBUG ((EFI_D_ERROR, "TimerLib:NanoSecondDelay NanoSeconds=%d,use udelay start\n",NanoSeconds));
-	
-	UINTN ret = 0;
-	/*{
-		UINT32 vector = INT_DEBUG_TIMER_EXP;
-		
-		UINT32 reg = GIC_DIST_ENABLE_CLEAR + (vector / 32) * 4;
-		UINT32 bit = 1U << (vector & 31);
-		writel(bit, reg);
-	}
-	
-	
-	
-	//if(NanoSeconds>=25)
-	{
-		Set_DGT_Enable(0);
-		Set_DGT_ClrOnMatch(0);
-		
-		MmioWrite32(DGT_CLK_CTL, 3);
-		MmioWrite32(DGT_MATCH_VAL,0);
-		MmioWrite32(DGT_CLEAR,0);
-		
-		Set_DGT_Enable(1);
-		
-		
-		
-		int ticks_per_sec = 27000000 / 4;
-		UINT64 AA = NanoSeconds * ticks_per_sec;
-		UINT64 BB = AA / 1000000000;
-		
-		if(BB == 0)
-		{
-			BB = 25;
-		}
-		
-		//UINT32 CNT2;
-		//UINT32 CNT;
-		
-		//Get_DGT_CNT(&CNT2);
-		//do
-		//	Get_DGT_CNT(&CNT);
-		//while ( (CNT - CNT2) < BB );
-		UINT32 StartTime,CurrentTime,ElapsedTime;
-		
-		StartTime = MmioRead32 (DGT_COUNT_VAL);
-
-		do 
-		{
-			CurrentTime = MmioRead32 (DGT_COUNT_VAL);
-			ElapsedTime = CurrentTime - StartTime;
-		} while (ElapsedTime < BB);
-		
-		ret =  ((ElapsedTime * 1000000000) / ticks_per_sec);
-		
-	}
-	//else
-	//{
-	//	ret = NanoSeconds;
-	//}
-	//DEBUG ((EFI_D_ERROR, "TimerLib:NanoSecondDelay NanoSeconds=%d,use udelay end\n",NanoSeconds));*/
-	
-	return ret;
+	udelay(NanoSeconds);
+	return NanoSeconds;
 }
 
 UINT64
@@ -203,8 +132,8 @@ GetPerformanceCounter (
   VOID
   )
 {
-  // Just return the value of system count
-  return ArmGenericTimerGetSystemCount ();
+  // Todo
+  return (UINT64)-1;
 }
 
 /**
@@ -233,17 +162,18 @@ GetPerformanceCounterProperties (
   OUT      UINT64                    *EndValue     OPTIONAL
   )
 {
+  // Todo
   if (StartValue != NULL) {
-    // Timer starts at 0
-    *StartValue = (UINT64)0ULL ;
+    // Timer starts with the reload value
+    *StartValue = (UINT64)10000;
   }
-
+  
   if (EndValue != NULL) {
-    // Timer counts up.
-    *EndValue = 0xFFFFFFFFFFFFFFFFUL;
+    // Timer counts up to 0xFFFFFFFF
+    *EndValue = 0xFFFFFFFF;
   }
-
-  return (UINT64)ArmGenericTimerGetTimerFreq ();
+  
+  return PcdGet64(PcdEmbeddedPerformanceCounterFrequencyInHz);
 }
 
 
@@ -260,8 +190,8 @@ GetTimeInNanoSecond (
   IN      UINT64                     Ticks
   )
 {
-  UINT64  NanoSeconds;
-  UINT32  Remainder;
+  UINT64  NanoSeconds = 0;
+  /*UINT32  Remainder;
   UINT32  TimerFreq;
 
   TimerFreq = PcdGet32(PcdArmArchTimerFreqInHz);
@@ -287,7 +217,7 @@ GetTimeInNanoSecond (
                      (UINT64) Remainder,
                      1000000000U),
                    TimerFreq
-                   );
+                   );*/
 
   return NanoSeconds;
 }
