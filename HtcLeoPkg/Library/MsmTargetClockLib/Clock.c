@@ -1,27 +1,3 @@
-/* Copyright (c) 2011-2012, Code Aurora Forum. All rights reserved. *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 and
- * only version 2 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
-
-#include <Library/IoLib.h>
-#include <Library/DebugLib.h>
-#include <Library/ArmLib.h>
-
-#include <Library/qcom_lk.h>
-#include <Library/pcom.h>
-
-#include <Library/qcom_qsd8250_iomap.h>
-#include <Library/qcom_qsd8250_irqs.h>
-#include <Library/qcom_qsd8250_clock.h>
-#include <Library/qcom_qsd8250_timer.h>
-
-
 /*
  * Copyright (C) 2007 Google, Inc.
  * Copyright (c) 2007 QUALCOMM Incorporated
@@ -38,15 +14,18 @@
  * GNU General Public License for more details.
  *
  */
- 
-/*#include <array.h>
-#include <compiler.h>
-#include <reg.h>
-#include <pcom.h>
-#include <kernel/thread.h>
-#include <platform/iomap.h>
-#include <target/clock.h>
-#include <platform/timer.h>*/
+
+#include <Library/IoLib.h>
+#include <Library/DebugLib.h>
+#include <Library/ArmLib.h>
+
+#include <Library/qcom_lk.h>
+#include <Library/pcom.h>
+
+#include <Library/qcom_qsd8250_iomap.h>
+#include <Library/qcom_qsd8250_irqs.h>
+#include <Library/qcom_qsd8250_clock.h>
+#include <Library/qcom_qsd8250_timer.h>
 
 #define TCX0               19200000
 #define GLBL_CLK_ENA       ((UINT32)MSM_CLK_CTL_BASE)
@@ -543,7 +522,7 @@ static int cotulla_clk_enable(UINT32 id)
 		default:
 			return -1;  
     }
-    msm_proc_comm(PCOM_CLK_REGIME_SEC_ENABLE, &clk, 0);//deleted, pcom_lib needed?
+    msm_proc_comm(PCOM_CLK_REGIME_SEC_ENABLE, &clk, 0);
 	
     return 0;
 }
