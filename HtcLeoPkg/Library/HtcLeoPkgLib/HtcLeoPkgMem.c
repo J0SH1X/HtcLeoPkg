@@ -41,6 +41,9 @@ ArmPlatformGetVirtualMemoryMap (
   IN ARM_MEMORY_REGION_DESCRIPTOR** VirtualMemoryMap
   )
 {
+  // You are not expected to call this
+	ASSERT(FALSE);
+  
   ARM_MEMORY_REGION_ATTRIBUTES  CacheAttributes;
   UINTN                         Index = 0;
   ARM_MEMORY_REGION_DESCRIPTOR  *VirtualMemoryTable;
@@ -92,10 +95,16 @@ ArmPlatformGetVirtualMemoryMap (
   VirtualMemoryTable[Index].Length         = 0x1E5F8000;
   VirtualMemoryTable[Index].Attributes     = CacheAttributes;
 
-  // Peripheral region
-  VirtualMemoryTable[++Index].PhysicalBase = 0xA0300000;
-  VirtualMemoryTable[Index].VirtualBase    = 0xA0300000;
-  VirtualMemoryTable[Index].Length         = 0x0BE00104;
+  // VIC region
+  VirtualMemoryTable[++Index].PhysicalBase = 0xAC000000;
+  VirtualMemoryTable[Index].VirtualBase    = 0xAC000000;
+  VirtualMemoryTable[Index].Length         = 0x00100000;
+  VirtualMemoryTable[Index].Attributes     = SOC_REGISTERS_ATTRIBUTES;
+
+  // GPT region
+  VirtualMemoryTable[++Index].PhysicalBase = 0xAC100000;
+  VirtualMemoryTable[Index].VirtualBase    = 0xAC100000;
+  VirtualMemoryTable[Index].Length         = 0x00100000;
   VirtualMemoryTable[Index].Attributes     = SOC_REGISTERS_ATTRIBUTES;
 
   // End of Table
