@@ -25,6 +25,9 @@
 UINT64  mSystemMemoryEnd = FixedPcdGet64 (PcdSystemMemoryBase) +
                            FixedPcdGet64 (PcdSystemMemorySize) - 1;
 
+#define MSM_MDP_BASE1 0xAA200000
+#define FB_ADDR 0x11A08000
+
 VOID
 PrePiMain (
   IN  UINTN   UefiMemoryBase,
@@ -42,13 +45,8 @@ PrePiMain (
   // Initialize the architecture specific bits
   ArchInitialize ();
 
-  // Paint the screen to black
-  UINT8 *start = (UINT8 *)0x02A00000;
-  UINT8 *end = (UINT8 *)0x02ABBB00;  
-
-  for (UINT8 *ptr = start; ptr < end; ptr++) {
-    *ptr = 0;
-  }
+  // Move Framebuffer to the top
+  MmioWrite32(MSM_MDP_BASE1 + 0x90008, FB_ADDR);
 
   // Initialize the Serial Port
   SerialPortInitialize ();

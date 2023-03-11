@@ -469,7 +469,7 @@ static enum handler_return msm_gpio_isr(void *arg)
 	unsigned s, e;
 	gpioregs *r;
 
-	enter_critical_section();
+	//enter_critical_section();
 	for (unsigned i = 0; i < ARRAY_SIZE(GPIO_REGS); i++) {
 		r = GPIO_REGS + i;
 		s = readl(r->int_status);
@@ -488,14 +488,14 @@ static enum handler_return msm_gpio_isr(void *arg)
 				gpio_irq_handlers[i].handler(gpio_irq_handlers[i].arg);
 		}
 	}
-	exit_critical_section();
+	//exit_critical_section();
 	
 	return INT_RESCHEDULE;
 }
 
 void msm_gpio_init(void)
 {
-	enter_critical_section();
+	//enter_critical_section();
 	for (unsigned i = 0; i < ARRAY_SIZE(GPIO_REGS); i++) {
 		writel(-1, GPIO_REGS[i].int_clear);
 		writel(0, GPIO_REGS[i].int_en);
@@ -506,12 +506,12 @@ void msm_gpio_init(void)
 
 	unmask_interrupt(INT_GPIO_GROUP1);
 	unmask_interrupt(INT_GPIO_GROUP2);
-	exit_critical_section();
+	//exit_critical_section();
 }
 
 void msm_gpio_deinit(void)
 {
-	enter_critical_section();
+	//enter_critical_section();
 	for (unsigned i = 0; i < ARRAY_SIZE(GPIO_REGS); i++) {
 		writel(-1, GPIO_REGS[i].int_clear);
 		writel(0, GPIO_REGS[i].int_en);
@@ -519,7 +519,7 @@ void msm_gpio_deinit(void)
 	
 	mask_interrupt(INT_GPIO_GROUP1);
 	mask_interrupt(INT_GPIO_GROUP2);
-	exit_critical_section();
+	//exit_critical_section();
 }
 
 void register_gpio_int_handler(unsigned gpio, int_handler handler, void *arg)
@@ -528,10 +528,10 @@ void register_gpio_int_handler(unsigned gpio, int_handler handler, void *arg)
 		//dprintf(CRITICAL, "%s: gpio %d is out of supported range\n", __func__, gpio);
 	}
 	
-	enter_critical_section();
+	//enter_critical_section();
 	gpio_irq_handlers[gpio].handler = handler;
 	gpio_irq_handlers[gpio].arg = arg;
-	exit_critical_section();
+	//exit_critical_section();
 }
 
 status_t mask_gpio_interrupt(unsigned gpio)
