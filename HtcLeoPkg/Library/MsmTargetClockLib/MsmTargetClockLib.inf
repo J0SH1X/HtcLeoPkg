@@ -6,6 +6,7 @@
   MODULE_TYPE                    = BASE
   VERSION_STRING                 = 1.0
   LIBRARY_CLASS                  = MsmTargetClockLib
+  CONSTRUCTOR                    = MsmTargetClockLibInitialize
 
 
 #
@@ -17,6 +18,7 @@
 [Sources.common]
   Clock.c
   ACPUClock.c
+  TargetClockLib.c
 
 [Packages]
   EmbeddedPkg/EmbeddedPkg.dec

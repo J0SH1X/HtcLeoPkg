@@ -16,6 +16,7 @@
   qcom_clock.c
   qcom_clock_local.c
   qcom_clock_pll.c
+  ClockLib.c
 
 [LibraryClasses]
   DebugLib

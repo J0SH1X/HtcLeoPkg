@@ -13,17 +13,17 @@
 
 [Defines]
   INF_VERSION                    = 0x00010005
-  BASE_NAME                      = SdccDxe
-  FILE_GUID                      = A9AE7F06-35A1-40AF-A894-7CF3BA488B31
+  BASE_NAME                      = GpioDxe
+  FILE_GUID                      = A9AE7F06-35A1-40AF-A894-7CF3BA488B2F
   MODULE_TYPE                    = DXE_DRIVER
   VERSION_STRING                 = 1.0
 
-  ENTRY_POINT                    = SdccDxeInitialize
+  ENTRY_POINT                    = GpioDxeInitialize
 
 [BuildOptions.ARM]
   GCC:*_*_*_CC_FLAGS = -Wno-unused-function -Wno-unused-variable -Wno-shift-count-overflow -Wno-implicit-function-declaration -Wno-missing-braces
 [Sources.common]
-  SdccDxe.c
+  GpioDxe.c
 
 [Packages]
   ArmPkg/ArmPkg.dec
@@ -46,12 +46,12 @@
   UefiBootServicesTableLib
 
   AdmLib
-  # MsmTargetClockLib
+  #MsmTargetClockLib
   #MsmClockLib #Added
-  MsmTargetMmcLib
-  # MsmTargetGpioLib
+  # MsmTargetMmcLib
+  MsmTargetGpioLib
   MsmPcomClientLib
-  MsmSdccLib
+  # MsmSdccLib
   # MsmTargetLib
   TimerLib
 

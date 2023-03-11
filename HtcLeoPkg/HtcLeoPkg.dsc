@@ -238,11 +238,15 @@
   # QSD8250 necessary driver execution environment
   #
   HtcLeoPkg/Drivers/HtcLeoPkgDxe/HtcLeoPkgDxe.inf
+
+  # SoC Drivers
+  HtcLeoPkg/Drivers/ClockDxe/ClockDxe.inf
+  HtcLeoPkg/Drivers/GpioDxe/GpioDxe.inf
+  HtcLeoPkg/Drivers/SdccDxe/SdccDxe.inf
+
+  # Graphics
   HtcLeoPkg/Drivers/SimpleFbDxe/SimpleFbDxe.inf
   HtcLeoPkg/Drivers/LogoDxe/LogoDxe.inf
-
-  # Drivers
-  HtcLeoPkg/Drivers/SdccDxe/SdccDxe.inf
 
   #
   # USB Host Support

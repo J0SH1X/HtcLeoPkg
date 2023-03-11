@@ -271,18 +271,6 @@ SdccDxeInitialize(
 
 	//ZeroMem(&gCardInfo, sizeof(CARD_INFO));
 
-	DEBUG((EFI_D_ERROR, "Gpio init start\n"));
-	msm_gpio_init();
-
-	DEBUG((EFI_D_ERROR, "Gpio init done!\n"));
-
-
-	DEBUG((EFI_D_ERROR, "Clock init start\n"));
-	msm_clock_init();
-	DEBUG((EFI_D_ERROR, "Clock init done!\n"));
-
-	SdccLibInitialize();
-
 /* start of ugly stuff */
 	mmc_t htcleo_mmc;
     sd_parms_t htcleo_sdcc;

@@ -113,21 +113,26 @@ APRIORI DXE {
   INF HtcLeoPkg/Drivers/GraphicsConsoleDxe/GraphicsConsoleDxe.inf
   INF MdeModulePkg/Universal/Console/TerminalDxe/TerminalDxe.inf
 
+  # Core Drivers
   # INF ArmPkg/Drivers/ArmGic/ArmGicDxe.inf
   # INF ArmPkg/Drivers/TimerDxe/TimerDxe.inf
   INF HtcLeoPkg/Drivers/InterruptDxe/InterruptDxe.inf
-
   INF MdeModulePkg/Universal/WatchdogTimerDxe/WatchdogTimer.inf
+  INF HtcLeoPkg/Drivers/HtcLeoPkgDxe/HtcLeoPkgDxe.inf
 
+  # SoC Drivers
+  INF HtcLeoPkg/Drivers/ClockDxe/ClockDxe.inf
+  INF HtcLeoPkg/Drivers/GpioDxe/GpioDxe.inf  
+  INF HtcLeoPkg/Drivers/SdccDxe/SdccDxe.inf
+
+  # Graphics
+  INF HtcLeoPkg/Drivers/SimpleFbDxe/SimpleFbDxe.inf
 
 
   #
   # Virtual Keyboard
   #
   INF EmbeddedPkg/Drivers/VirtualKeyboardDxe/VirtualKeyboardDxe.inf
-
-  INF HtcLeoPkg/Drivers/HtcLeoPkgDxe/HtcLeoPkgDxe.inf
-  INF HtcLeoPkg/Drivers/SimpleFbDxe/SimpleFbDxe.inf
 
   #
   # USB Host Support
@@ -189,7 +194,6 @@ APRIORI DXE {
   INF MdeModulePkg/Universal/BdsDxe/BdsDxe.inf
   INF MdeModulePkg/Application/UiApp/UiApp.inf
   INF HtcLeoPkg/Drivers/LogoDxe/LogoDxe.inf
-  INF HtcLeoPkg/Drivers/SdccDxe/SdccDxe.inf
 
   #
   # UEFI applications
