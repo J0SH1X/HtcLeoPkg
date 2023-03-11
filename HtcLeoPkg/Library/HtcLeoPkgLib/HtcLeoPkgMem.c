@@ -92,10 +92,10 @@ ArmPlatformGetVirtualMemoryMap (
   VirtualMemoryTable[Index].Length         = 0x1E5F8000;
   VirtualMemoryTable[Index].Attributes     = CacheAttributes;
 
-  // VIC registers
-  VirtualMemoryTable[++Index].PhysicalBase = 0xAC000000;
-  VirtualMemoryTable[Index].VirtualBase    = 0xAC000000;
-  VirtualMemoryTable[Index].Length         = 0x00100000;
+  // Peripheral region
+  VirtualMemoryTable[++Index].PhysicalBase = 0xA0300000;
+  VirtualMemoryTable[Index].VirtualBase    = 0xA0300000;
+  VirtualMemoryTable[Index].Length         = 0x0BE00104;
   VirtualMemoryTable[Index].Attributes     = SOC_REGISTERS_ATTRIBUTES;
 
   // End of Table
