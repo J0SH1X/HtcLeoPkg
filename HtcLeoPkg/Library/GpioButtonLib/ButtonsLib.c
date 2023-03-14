@@ -27,7 +27,6 @@ MsmGpioButtonInitialize(VOID)
 
 //   }
   //Status = gpio_keys_init(&gpio_keys_pdata);
-  ASSERT_EFI_ERROR(Status);
 
   return Status;
 }
