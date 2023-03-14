@@ -91,6 +91,7 @@
   MsmTargetGpioLib|HtcLeoPkg/Library/MsmTargetGpioLib/MsmTargetGpioLib.inf
   MsmTargetMmcLib|HtcLeoPkg/Library/MsmTargetMmcLib/MsmTargetMmcLib.inf
   MsmSdccLib|HtcLeoPkg/Library/MsmSdccLib/MsmSdccLib.inf
+  GpioButtonsLib| HtcLeoPkg/Library/GpioButtonsLib/GpioButtonsLib.inf
 
 [LibraryClasses.common.SEC]
   PrePiLib|EmbeddedPkg/Library/PrePiLib/PrePiLib.inf
