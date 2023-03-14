@@ -12,13 +12,13 @@
  *			would do that anyway or using const modifier.
  */
 
-#include <bits.h>
+#include <Library/bits.h>
 #include <stdlib.h>
 #include <string.h>
-#include <dev/keys.h>
-#include <dev/gpio.h>
-#include <kernel/timer.h>
-#include <target/gpio_keys.h>
+#include <Library/keys.h>
+#include <Library/qcom_qsd8250_gpio.h>
+#include <Library/timer.h>
+#include <Library/gpio_keys.h>
 
 static int some_key_pressed;
 static unsigned long gpio_keys_bitmap;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2009 Travis Geiselbrecht
+ * Copyright (c) 2008 Travis Geiselbrecht
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files
@@ -20,40 +20,55 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef __KERNEL_TIMER_H
-#define __KERNEL_TIMER_H
+#ifndef __ARCH_OPS_H
+#define __ARCH_OPS_H
 
-#include <list.h>
+#ifndef ASSEMBLY
+
 #include <sys/types.h>
+#include <Library/compiler.h>
 
-void timer_init(void);
-
-struct timer;
-typedef enum handler_return (*timer_callback)(struct timer *, time_t now, void *arg);
-
-#define TIMER_MAGIC 'timr'
-#define PLATFORM_HAS_DYNAMIC_TIMER	0
-
-typedef struct timer {
-	int magic;
-	struct list_node node;
-
-	time_t scheduled_time;
-	time_t periodic_time;
-
-	timer_callback callback;
-	void *arg;
-} timer_t;
-
-/* Rules for Timers:
- * - Timer callbacks occur from interrupt context
- * - Timers may be programmed or canceled from interrupt or thread context
- * - Timers may be canceled or reprogrammed from within their callback
- * - Timers currently are dispatched from a 10ms periodic tick
-*/
-void timer_initialize(timer_t *);
-void timer_set_oneshot(timer_t *, time_t delay, timer_callback, void *arg);
-void timer_set_periodic(timer_t *, time_t period, timer_callback, void *arg);
-void timer_cancel(timer_t *);
+#if defined(__cplusplus)
+extern "C" {
 #endif
 
+void arch_enable_ints(void);
+void arch_disable_ints(void);
+
+int atomic_swap(volatile int *ptr, int val);
+int atomic_add(volatile int *ptr, int val);
+int atomic_and(volatile int *ptr, int val);
+int atomic_or(volatile int *ptr, int val);
+
+#endif // !ASSEMBLY
+#define ICACHE 1
+#define DCACHE 2
+#define UCACHE (ICACHE|DCACHE)
+#ifndef ASSEMBLY
+
+void arch_disable_cache(uint flags);
+void arch_enable_cache(uint flags);
+
+void arch_clean_cache_range(caddr_t start, size_t len);
+void arch_clean_invalidate_cache_range(caddr_t start, size_t len);
+void arch_invalidate_cache_range(caddr_t start, size_t len);
+void arch_sync_cache_range(caddr_t start, size_t len);
+	
+void arch_idle(void);
+
+void arch_disable_mmu(void);
+
+void arch_switch_stacks_and_call(caddr_t call, caddr_t stack) __NO_RETURN;
+u_int32_t arch_cycle_count(void);
+
+#if defined(__cplusplus)
+}
+#endif
+
+#endif // !ASSEMBLY
+
+#if ARCH_ARM
+#include <arch/arm/ops.h>
+#endif
+
+#endif

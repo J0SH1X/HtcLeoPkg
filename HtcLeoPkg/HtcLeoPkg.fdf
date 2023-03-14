@@ -122,8 +122,9 @@ APRIORI DXE {
 
   # SoC Drivers
   INF HtcLeoPkg/Drivers/ClockDxe/ClockDxe.inf
-  INF HtcLeoPkg/Drivers/GpioDxe/GpioDxe.inf  
+  INF HtcLeoPkg/Drivers/GpioDxe/GpioDxe.inf
   INF HtcLeoPkg/Drivers/SdccDxe/SdccDxe.inf
+  INF HtcLeoPkg/Drivers/ButtonsDxe/ButtonsDxe.inf
 
   # Graphics
   INF HtcLeoPkg/Drivers/SimpleFbDxe/SimpleFbDxe.inf

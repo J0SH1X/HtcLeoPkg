@@ -23,7 +23,7 @@
 #ifndef __BITS_H
 #define __BITS_H
 
-#include <arch/ops.h>
+#include <Library/ops.h>
 
 #define clz(x) __builtin_clz(x)
 
