@@ -24,7 +24,7 @@ jobs:
       run: |
         cd /home/runner/work/edk2stuff
         git clone https://github.com/Tianocore/edk2.git --recursive --depth=1
-        git clone https://github.com/HTC-Leo-Revival-Project/HtcLeoPkg.git --depth=1
+        git clone https://github.com/HTC-Leo-Revival-Project/HtcLeoPkg.git --depth=1 -b buttons
         git clone https://github.com/tianocore/edk2-platforms.git --depth=1
         
     - name: Build BaseTools
