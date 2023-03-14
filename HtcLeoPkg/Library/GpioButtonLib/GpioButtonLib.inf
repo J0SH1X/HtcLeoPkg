@@ -1,0 +1,30 @@
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = GpioButtonsLib
+  FILE_GUID                      = 793667f3-e19c-4fcf-a510-519e83689bb8
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = GpioButtonsLib
+ # VALID_ARCHITECTURES            = ARM
+
+[BuildOptions.ARM]
+  GCC:*_*_*_CC_FLAGS = -Werror -Wno-unused-function -Wno-unused-variable -Wno-shift-count-overflow
+[Sources.common]
+  ButtonsLib.c
+  GpioButtons.c
+
+[LibraryClasses]
+  DebugLib
+  IoLib
+  TimerLib
+  ArmLib
+
+[Packages]
+  ArmPkg/ArmPkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec
+  MdePkg/MdePkg.dec
+  HtcLeoPkg/HtcLeoPkg.dec
+  
+[FixedPcd]
+
