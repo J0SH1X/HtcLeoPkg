@@ -244,7 +244,6 @@
   HtcLeoPkg/Drivers/ClockDxe/ClockDxe.inf
   HtcLeoPkg/Drivers/GpioDxe/GpioDxe.inf
   HtcLeoPkg/Drivers/SdccDxe/SdccDxe.inf
-#ButtonsDxe
   HtcLeoPkg/Drivers/ButtonsDxe/ButtonsDxe.inf
 
   # Graphics
