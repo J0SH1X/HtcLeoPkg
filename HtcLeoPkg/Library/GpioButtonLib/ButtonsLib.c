@@ -7,8 +7,7 @@
 #include <Target/gpio_keys.h>
 #include <Library/gpio.h>
 #include <Library/ButtonsLib.h>
-#define HTCLEO_GPIO_KP_LED 48
-#define TARGETLIBLOGNAME "ButtonsLib: "
+
 
 static struct gpio_keys_pdata htcleo_gpio_key_pdata = {
 	.nr_keys = 1,
