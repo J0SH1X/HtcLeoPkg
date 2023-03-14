@@ -9,21 +9,7 @@
 #include <Library/ButtonsLib.h>
 
 
-static struct gpio_keys_pdata htcleo_gpio_key_pdata = {
-	.nr_keys = 1,
-	.poll_time = 20,
-	.debounce_time = 40,
-	.gpio_key = &gpio_keys_tbl[0],
-};
 
-static struct gpio_key gpio_keys_tbl[] = {
-	{
-		.polarity 		= 1,
-		.key_code 		= KEY_POWER,
-		.gpio_nr 		= HTCLEO_GPIO_POWER_KEY,
-		.notify_fn 		= &htcleo_handle_key_bkl,
-	},
-};
 
 RETURN_STATUS
 EFIAPI
