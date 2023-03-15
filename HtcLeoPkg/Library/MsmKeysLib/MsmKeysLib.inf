@@ -1,0 +1,32 @@
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = MsmKeysLib
+  FILE_GUID                      = 293d039b-a34e-49c8-9933-5952d8dd09ec
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = MsmKeysLib
+ # VALID_ARCHITECTURES            = ARM
+
+[BuildOptions.ARM]
+  GCC:*_*_*_CC_FLAGS = -Werror -Wno-unused-function -Wno-unused-variable -Wno-shift-count-overflow -Wno-incompatible-pointer-types
+[Sources.common]
+  keys.c
+  gpio_keypad.c
+
+[LibraryClasses]
+  DebugLib
+  IoLib
+  TimerLib
+  ArmLib
+
+  MsmTargetGpioLib
+
+[Packages]
+  ArmPkg/ArmPkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec
+  MdePkg/MdePkg.dec
+  HtcLeoPkg/HtcLeoPkg.dec
+  
+[FixedPcd]
+
