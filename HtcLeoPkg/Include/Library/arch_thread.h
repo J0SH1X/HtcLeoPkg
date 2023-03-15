@@ -22,9 +22,7 @@
  */
 #ifndef __ARM_ARCH_THREAD_H
 #define __ARM_ARCH_THREAD_H
-
-typedef uintptr_t vaddr_t;
-typedef unsigned long int	uintptr_t;
+#include <Library/lk_types.h>
 
 struct arch_thread {
 	vaddr_t sp;

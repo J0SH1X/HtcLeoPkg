@@ -20,22 +20,24 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef __PLATFORM_TIMER_H
-#define __PLATFORM_TIMER_H
-#include <Library/lk_types.h>
+#ifndef __ASSERT_H
+#define __ASSERT_H
 
-typedef enum handler_return (*platform_timer_callback)(void *arg, time_t now);
+#include <Library/compiler.h>
+#include <Library/debug.h>
+#include <Library/DebugLib.h>
 
-status_t platform_set_periodic_timer(platform_timer_callback callback, void *arg, time_t interval);
 
-void platform_init_timer(void);
-void platform_deinit_timer(void);
-void platform_stop_timer(void);
-void mdelay(unsigned msecs);
-void udelay(unsigned usecs);
 
-bigtime_t current_time_hires(void);
-time_t current_time(void);
+#define ASSERTLK(x) \
+	do { if (unlikely(!(x))) { DEBUG((EFI_D_ERROR, "ASSERT FAILED at (%s:%d): %s\n", __FILE__, __LINE__, #x)); } } while (0)
 
+#if DEBUGLEVEL > 1
+#define DEBUG_ASSERTLK(x) \
+	do { if (unlikely(!(x))) { panic("DEBUG ASSERT FAILED at (%s:%d): %s\n", __FILE__, __LINE__, #x); } } while (0)
+#else
+#define DEBUG_ASSERTLK(x) \
+	do { } while(0)
 #endif
 
+#endif

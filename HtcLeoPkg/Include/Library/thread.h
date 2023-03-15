@@ -24,8 +24,8 @@
 #define __KERNEL_THREAD_H
 
 #include <sys/types.h>
-#include <list.h>
-#include <compiler.h>
+#include <Library/list.h>
+#include <Library/compiler.h>
 #include <Library/defines.h>
 #include <Library/ops.h>
 #include <Library/thread_arch.h>

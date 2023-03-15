@@ -26,10 +26,8 @@
 /* arm specific stuff */
 #define PAGE_SIZE 4096
 
-#if defined(ARM_CPU_CORTEX_A8)
+
 #define CACHE_LINE 64
-#else
-#error unknown cpu
 #endif
 
-#endif
+

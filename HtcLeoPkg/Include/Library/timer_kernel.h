@@ -23,7 +23,7 @@
 #ifndef __KERNEL_TIMER_H
 #define __KERNEL_TIMER_H
 
-#include <list.h>
+#include <Library/list.h>
 #include <sys/types.h>
 
 void timer_init(void);
@@ -31,7 +31,7 @@ void timer_init(void);
 struct timer;
 typedef enum handler_return (*timer_callback)(struct timer *, time_t now, void *arg);
 
-#define TIMER_MAGIC 'timr'
+#define TIMERMAGIC 'timr'
 #define PLATFORM_HAS_DYNAMIC_TIMER	0
 
 typedef struct timer {
@@ -43,7 +43,7 @@ typedef struct timer {
 
 	timer_callback callback;
 	void *arg;
-} timer_t;
+} timer_t_kernel;
 
 /* Rules for Timers:
  * - Timer callbacks occur from interrupt context
@@ -51,9 +51,9 @@ typedef struct timer {
  * - Timers may be canceled or reprogrammed from within their callback
  * - Timers currently are dispatched from a 10ms periodic tick
 */
-void timer_initialize(timer_t *);
-void timer_set_oneshot(timer_t *, time_t delay, timer_callback, void *arg);
-void timer_set_periodic(timer_t *, time_t period, timer_callback, void *arg);
-void timer_cancel(timer_t *);
+void timer_initialize(timer_t_kernel *);
+void timer_set_oneshot(timer_t_kernel *, time_t delay, timer_callback, void *arg);
+void timer_set_periodic(timer_t_kernel *, time_t period, timer_callback, void *arg);
+void timer_cancel(timer_t_kernel *);
 #endif
 

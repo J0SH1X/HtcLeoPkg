@@ -42,7 +42,7 @@
 
 struct gpio_keypad_info {
 	/* size must be ninputs * noutputs */
-	const uint16_t *keymap;
+	const u_int16_t *keymap;
 	unsigned *input_gpios;
 	unsigned *output_gpios;
 	int ninputs;

@@ -20,22 +20,32 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef __PLATFORM_TIMER_H
-#define __PLATFORM_TIMER_H
-#include <Library/lk_types.h>
+#ifndef __PLATFORM_DEBUG_H
+#define __PLATFORM_DEBUG_H
 
-typedef enum handler_return (*platform_timer_callback)(void *arg, time_t now);
+#include <sys/types.h>
+#include <stdarg.h>
+#include <Library/compiler.h>
 
-status_t platform_set_periodic_timer(platform_timer_callback callback, void *arg, time_t interval);
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
-void platform_init_timer(void);
-void platform_deinit_timer(void);
-void platform_stop_timer(void);
-void mdelay(unsigned msecs);
-void udelay(unsigned usecs);
+void debug_dump_regs(void);
+u_int32_t debug_cycle_count(void);
 
-bigtime_t current_time_hires(void);
-time_t current_time(void);
+void debug_dump_memory_bytes(void *mem, int len);
+void debug_dump_memory_halfwords(void *mem, int len);
+void debug_dump_memory_words(void *mem, int len);
+
+void debug_set_trace_level(int trace_type, int level);
+
+void platform_halt(void) __NO_RETURN;
+
+#if defined(__cplusplus)
+}
+#endif
+
 
 #endif
 

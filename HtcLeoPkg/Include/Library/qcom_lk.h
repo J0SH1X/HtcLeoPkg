@@ -18,7 +18,7 @@ typedef UINTN addr_t;
 typedef UINTN paddr_t;
 
 #ifndef offsetof
-#define offsetof(TYPE, MEMBER) ((size_t)&((TYPE *)0)->MEMBER)
+#define offsetof(TYPE, member) ((size_t)&((TYPE *)0)->member)
 #endif
 
 #ifndef container_of
