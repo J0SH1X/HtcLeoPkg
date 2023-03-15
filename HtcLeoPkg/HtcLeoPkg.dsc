@@ -93,7 +93,7 @@
   #MsmSdccLib|HtcLeoPkg/Library/MsmSdccLib/MsmSdccLib.inf
   GpioButtonsLib| HtcLeoPkg/Library/GpioButtonLib/GpioButtonLib.inf
   MsmKeysLib| HtcLeoPkg/Library/MsmKeysLib/MsmKeysLib.inf
-  HtcLeoPlatformLib| HtcLeoPkg/Library/HtcLeoPkgLib/HtcLeoPkgLib.inf
+  HtcLeoPlatformLib| HtcLeoPkg/Library/HtcLeoPlatformLib/HtcLeoPlatformLib.inf
 
 [LibraryClasses.common.SEC]
   PrePiLib|EmbeddedPkg/Library/PrePiLib/PrePiLib.inf
