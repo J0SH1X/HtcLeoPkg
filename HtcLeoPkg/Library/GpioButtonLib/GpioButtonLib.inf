@@ -22,6 +22,10 @@
 
   MsmTargetGpioLib
 
+  MsmKeysLib
+
+  HtcLeoPlatformLib
+
 [Packages]
   ArmPkg/ArmPkg.dec
   EmbeddedPkg/EmbeddedPkg.dec

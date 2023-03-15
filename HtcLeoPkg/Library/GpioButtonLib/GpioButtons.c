@@ -69,6 +69,9 @@ static enum handler_return gpio_keys_poll_fn(struct timer *timer, time_t now, vo
 
 void gpio_keys_init(struct gpio_keys_pdata *kpdata)
 {
+	for (int i = 0; i < 10; i++){
+		DEBUG((EFI_D_ERROR, "GPIO KEYS INIT FUNCTION\n"));
+	}
 	if(kpdata == NULL) {
 		DEBUG((EFI_D_ERROR, "FAILED: platform data is NULL!\n"));
 		return;
@@ -86,5 +89,5 @@ void gpio_keys_init(struct gpio_keys_pdata *kpdata)
 	memset(&gpio_keys_bitmap, 0, sizeof(unsigned long));
 
 	timer_initialize(&gpio_keys_poll);
-	timer_set_oneshot(&gpio_keys_poll, 0, gpio_keys_poll_fn, NULL);
+	//timer_set_oneshot(&gpio_keys_poll, 0, gpio_keys_poll_fn, NULL);
 }
