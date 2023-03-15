@@ -18,6 +18,7 @@
 #include <Protocol/DevicePath.h>
 #include <Library/gpio_keys.h>
 #include <Library/qcom_qsd8250_gpio.h>
+#include <Library/gpio.h>
 #include <Library/ButtonsLib.h>
 
 
