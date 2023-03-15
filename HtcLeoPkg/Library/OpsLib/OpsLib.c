@@ -1,5 +1,6 @@
 #include <Platform/ops.h>
 #include <Library/OpsLib.h>
+#define ARM_ISA_ARMv7
 
 /* critical sections */
 int critical_section_count;

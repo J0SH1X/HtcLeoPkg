@@ -38,3 +38,71 @@ FUNCTION(arch_disable_ints)
 	orr	r0, r0, #(1<<7)
 	msr	cpsr_c, r0
 	bx	lr
+
+	/* int atomic_and(int *ptr, int val); */
+FUNCTION(atomic_and)
+#if ARM_ISA_ARMV6 || ARM_ISA_ARMV7
+	/* use load/store exclusive */
+.L_loop_and:
+	ldrex 	r12, [r0]
+	and		r2, r12, r1
+	strex 	r3, r2, [r0]
+	cmp		r3, #0
+	bne 	.L_loop_and
+	
+	/* save old value */
+	mov		r0, r12
+	bx		lr
+#else
+	/* disable interrupts, do the and, and reenable */
+	mrs	r2, cpsr
+	mov	r12, r2
+	orr	r2, r2, #(3<<6)
+	msr	cpsr_c, r2
+
+	/* ints disabled, old cpsr state in r12 */
+	
+	/* do the and, leave the previous value in r0 */
+	mov	r3, r0
+	ldr	r0, [r3]
+	and	r2, r0, r1
+	str	r2, [r3]
+
+	/* restore interrupts and exit */
+	msr	cpsr_c, r12
+	bx	lr
+#endif
+	
+/* int atomic_or(int *ptr, int val); */
+FUNCTION(atomic_or)
+#if ARM_ISA_ARMV6 || ARM_ISA_ARMV7
+	/* use load/store exclusive */
+.L_loop_or:
+	ldrex 	r12, [r0]
+	orr		r2, r12, r1
+	strex 	r3, r2, [r0]
+	cmp		r3, #0
+	bne 	.L_loop_or
+	
+	/* save old value */
+	mov		r0, r12
+	bx		lr
+#else
+	/* disable interrupts, do the or, and reenable */
+	mrs	r2, cpsr
+	mov	r12, r2
+	orr	r2, r2, #(3<<6)
+	msr	cpsr_c, r2
+
+	/* ints disabled, old cpsr state in r12 */
+	
+	/* do the or, leave the previous value in r0 */
+	mov	r3, r0
+	ldr	r0, [r3]
+	orr	r2, r0, r1
+	str	r2, [r3]
+
+	/* restore interrupts and exit */
+	msr	cpsr_c, r12
+	bx	lr
+#endif
