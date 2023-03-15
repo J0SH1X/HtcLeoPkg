@@ -24,6 +24,7 @@
 #define __LIST_H
 
 //#include <sys/types.h>
+#include <Library/qcom_lk.h>
 
 #define containerof(ptr, type, member) \
 	((type *)((addr_t)(ptr) - offsetof(type, member)))
