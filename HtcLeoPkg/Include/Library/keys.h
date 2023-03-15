@@ -113,10 +113,10 @@
 
 #define MAX_KEYS	0x01ff
 
-int keys_get_state(u_int16_t code);
-int keys_set_state(u_int16_t code);
+int keys_get_state(uint16_t code);
+int keys_set_state(uint16_t code);
 
 void keys_init(void);
-void keys_post_event(u_int16_t code, int16_t value);
+void keys_post_event(uint16_t code, int16_t value);
 
 #endif /* __DEV_KEYS_H */
