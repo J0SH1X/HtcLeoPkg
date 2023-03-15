@@ -19,6 +19,9 @@
 #include <Library/qcom_qsd8250_gpio.h>
 #include <Library/timer.h>
 #include <Library/gpio_keys.h>
+#include <Library/gpio.h>
+#include <Library/DebugLib.h>
+#include <Library/InterruptsLib.h>
 
 static int some_key_pressed;
 static unsigned long gpio_keys_bitmap;
@@ -26,8 +29,7 @@ static unsigned long gpio_keys_bitmap;
 static struct timer gpio_keys_poll;
 static struct gpio_keys_pdata *pdata;
 
-static enum handler_return
-gpio_keys_poll_fn(struct timer *timer, time_t now, void *arg)
+static enum handler_return gpio_keys_poll_fn(struct timer *timer, time_t now, void *arg)
 {
 	uint32_t i = 0;
 	struct gpio_key *key = pdata->gpio_key;
@@ -68,13 +70,13 @@ gpio_keys_poll_fn(struct timer *timer, time_t now, void *arg)
 void gpio_keys_init(struct gpio_keys_pdata *kpdata)
 {
 	if(kpdata == NULL) {
-		printf("FAILED: platform data is NULL!\n");
+		DEBUG((EFI_D_ERROR, "FAILED: platform data is NULL!\n"));
 		return;
 	} else if (pdata != NULL) {
-		printf("FAILED: platform data is set already!\n");
+		DEBUG((EFI_D_ERROR, "FAILED: platform data is set already!\n"));
 		return;
 	} else if (!kpdata->nr_keys || (!(kpdata->nr_keys < BITMAP_BITS_PER_WORD)) ) {
-		printf("WARN: %d keys not supported, First 32 keys will be served.\n", (unsigned)kpdata->nr_keys);
+		DEBUG((EFI_D_ERROR, "WARN: %d keys not supported, First 32 keys will be served.\n",(unsigned)kpdata->nr_keys));
 		kpdata->nr_keys = 32;
 	}
 
