@@ -126,7 +126,7 @@ ulong _mmc_bwrite(int dev_num, ulong start, ulong blkcnt, const void *src)
 	}
 
 	if (blkcnt > 1) {
-		int stoperr __UNUSED = 0;
+		int stoperr __UNUSEDCLK = 0;
 		cmd.cmdidx = MMC_CMD_STOP_TRANSMISSION;
 		cmd.cmdarg = 0;
 		cmd.resp_type = MMC_RSP_R1b;

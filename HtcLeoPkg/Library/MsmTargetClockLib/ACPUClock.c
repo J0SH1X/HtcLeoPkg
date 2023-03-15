@@ -337,7 +337,7 @@ static void acpuclk_init(int freq_num)
 	if (acpuclk_init_done)
 		return;
 
-	unsigned init_khz __UNUSED;
+	unsigned init_khz __UNUSEDCLK;
 	init_khz = acpuclk_find_speed();
 	/*
 	 * request the modem pll, and then drop it. We don't want to keep a

@@ -34,10 +34,10 @@ typedef UINTN paddr_t;
 
 #define ERR_INVALID_ARGS -8
 
-#define BIT(bit) (1U << (bit))
-#define BIT_GET(x, bit) ((x)& (1 << (bit)))
-#define BIT_SHIFT(x, bit) (((x) >> (bit)) & 1)
-#define BITS(x, high, low) ((x)& (((1 << ((high)+1)) - 1) & ~((1 << (low)) - 1)))
+// #define BIT(bit) (1U << (bit))
+// #define BIT_GET(x, bit) ((x)& (1 << (bit)))
+// #define BIT_SHIFT(x, bit) (((x) >> (bit)) & 1)
+// #define BITS(x, high, low) ((x)& (((1 << ((high)+1)) - 1) & ~((1 << (low)) - 1)))
 
 //#define ERR_NOT_VALID 1
 
@@ -109,7 +109,7 @@ extern void udelay(unsigned usecs);
 #define RMWREG16(addr, startbit, width, val) *REG16(addr) = (*REG16(addr) & ~(((1<<(width)) - 1) << (startbit))) | ((val) << (startbit))
 #define RMWREG8(addr, startbit, width, val) *REG8(addr) = (*REG8(addr) & ~(((1<<(width)) - 1) << (startbit))) | ((val) << (startbit))
 
-#define __UNUSED //added
+#define __UNUSEDCLK //added
 
 #define true TRUE
 #define false FALSE

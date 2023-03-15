@@ -55,7 +55,7 @@ struct msm_clock_params
 
 static unsigned int pll_get_rate(int n)
 {
-	unsigned int mode __UNUSED, L, M, N, freq;
+	unsigned int mode __UNUSEDCLK, L, M, N, freq;
 	if (n == -1)
 		return TCX0;
 		
@@ -233,8 +233,8 @@ static int set_mdns_host_clock(UINT32 id, unsigned long freq)
 {
 	int n;
 	unsigned offset;
-	int retval __UNUSED;
-	bool found __UNUSED;
+	int retval __UNUSEDCLK;
+	bool found __UNUSEDCLK;
 	struct msm_clock_params params;
 	UINT32 nsreg;
 	found = 0;
