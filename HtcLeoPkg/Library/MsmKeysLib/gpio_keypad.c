@@ -30,8 +30,7 @@
  * SUCH DAMAGE.
  */
 
-#include <assert.h>
-#include <bits.h>
+#include <Library/bits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <Library/keys.h>
@@ -39,10 +38,23 @@
 #include <Library/gpio_keypad.h>
 #include <Library/event.h>
 #include <Library/timer_kernel.h>
-#include <reg.h>
+#include <Library/qcom_lk.h>
 #include <Library/iomap.h>
 #include <Library/timer_platform.h>
 #include <Library/InterruptsLib.h>
+#include <Library/MemoryAllocationLib.h>
+#include <Library/DebugLib.h>
+#include <Library/list.h>
+#include <Library/compiler.h>
+#include <Library/thread.h>
+#include <Library/timer_kernel.h>
+#include <Library/timer_platform.h>
+#include <Library/InterruptsLib.h>
+#include <Library/lk_types.h>
+#include <Library/assert.h>
+#include <Library/ButtonsLib.h>
+#include <Library/HtcLeoPlatformLib.h>
+#include <Library/BootReason.h>
 
 struct gpio_kp {
 	struct gpio_keypad_info *keypad_info;
@@ -141,7 +153,8 @@ void gpio_keypad_init(struct gpio_keypad_info *kpinfo)
 	key_count = kpinfo->ninputs * kpinfo->noutputs;
 
 	len = sizeof(struct gpio_kp) + (sizeof(unsigned long) *	BITMAP_NUM_WORDS(key_count));
-	keypad = malloc(len);
+	//keypad = malloc(len);
+	keypad = AllocatePool(len);
 	ASSERT(keypad);
 
 	memset(keypad, 0, len);
@@ -159,5 +172,7 @@ void gpio_keypad_init(struct gpio_keypad_info *kpinfo)
 	keypad->current_output = kpinfo->noutputs;
 	
 	timer_initialize(&keypad->timer);
-	timer_set_oneshot(&keypad->timer, 0, gpio_keypad_timer_func, NULL);
+	htcleo_key_bkl_pwr(1);
+	//htcleo_reboot(FASTBOOT_MODE);
+	//timer_set_oneshot(&keypad->timer, 0, gpio_keypad_timer_func, NULL);
 }

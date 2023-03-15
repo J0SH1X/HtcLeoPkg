@@ -28,10 +28,10 @@
  * SUCH DAMAGE.
  */
 
-#include <bits.h>
-#include <debug.h>
+#include <Library/bits.h>
+#include <Library/debug.h>
 #include <string.h>
-#include <dev/keys.h>
+#include <Library/keys.h>
 
 static unsigned long key_bitmap[BITMAP_NUM_WORDS(MAX_KEYS)];
 
@@ -40,7 +40,7 @@ void keys_init(void)
 	memset(key_bitmap, 0, sizeof(key_bitmap));
 }
 
-void keys_post_event(uint16_t code, int16_t value)
+void keys_post_event(u_int16_t code, int16_t value)
 {
 	if (code >= MAX_KEYS) {
 		return;
@@ -53,7 +53,7 @@ void keys_post_event(uint16_t code, int16_t value)
 	}
 }
 
-int keys_get_state(uint16_t code)
+int keys_get_state(u_int16_t code)
 {
 	if (code >= MAX_KEYS) {
 		return -1;
@@ -62,7 +62,7 @@ int keys_get_state(uint16_t code)
 	return bitmap_test(key_bitmap, code);
 }
 
-int keys_set_state(uint16_t code)
+int keys_set_state(u_int16_t code)
 {
 	if (code >= MAX_KEYS) {
 		return -1;
