@@ -30,7 +30,7 @@
 #include <Library/list.h>
 #include <Library/part.h>
 #include <Library/mmc.h>
-#include <Library/reg.h>
+#include <Library/qcom_lk.h>
 #include <Library/adm.h>
 //#include <Library/MsmSdccLib.h>
 
