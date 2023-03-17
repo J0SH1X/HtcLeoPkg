@@ -29,8 +29,8 @@
 
 #include <Library/InterruptsLib.h>
 
-#include <Platform/interrupts.h>
-#include <Platform/irqs.h>
+#include <Chipset/interrupts.h>
+#include <Chipset/irqs.h>
 
 //
 // Notifications

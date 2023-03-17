@@ -38,9 +38,9 @@
 #include <Library/UefiBootServicesTableLib.h>
 #include <Protocol/HardwareInterrupt.h>
 
-#include <Platform/irqs.h>
-#include <Platform/iomap.h>
-#include <Platform/interrupts.h>
+#include <Chipset/irqs.h>
+#include <Chipset/iomap.h>
+#include <Chipset/interrupts.h>
 
 struct ihandler {
 	int_handler func;
