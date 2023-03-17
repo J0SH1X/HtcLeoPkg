@@ -79,6 +79,9 @@
   MemoryInitPeiLib|HtcLeoPkg/Library/MemoryInitPeiLib/PeiMemoryAllocationLib.inf
   CompilerIntrinsicsLib|ArmPkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf
 
+  #Soc Drivers
+  HtcLeoPlatformResetLib| HtcLeoPkg/Library/HtcLeoPlatformResetLib/HtcLeoPlatformResetLib.inf
+
 [LibraryClasses.common.SEC]
   PrePiLib|EmbeddedPkg/Library/PrePiLib/PrePiLib.inf
   PrePiHobListPointerLib|ArmPlatformPkg/Library/PrePiHobListPointerLib/PrePiHobListPointerLib.inf
