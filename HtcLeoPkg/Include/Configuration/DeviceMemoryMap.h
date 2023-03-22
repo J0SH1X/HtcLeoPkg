@@ -25,7 +25,7 @@ typedef enum {
 
 typedef struct {
 	EFI_PHYSICAL_ADDRESS         Address;
-	UINT64                       Length;
+	u_int64                       Length;
 	EFI_RESOURCE_TYPE            ResourceType;
 	EFI_RESOURCE_ATTRIBUTE_TYPE	 ResourceAttribute;
 	ARM_MEMORY_REGION_ATTRIBUTES ArmAttributes;

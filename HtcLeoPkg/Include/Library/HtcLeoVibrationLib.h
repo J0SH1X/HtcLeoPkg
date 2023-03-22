@@ -17,10 +17,10 @@
 #define _HTCLEO_VIBRATE_H_
 
 #include <Library/DebugLib.h>
-#include <Library/qcom_qsd8250_iomap.h>
+#include <Chipset/iomap.h>
 #include <Library/HtcLeoGpio.h>
 #include <Library/qcom_lk.h>
-#include <Library/qcom_qsd8250_timer.h>
+#include <Chipset/timer.h>
 #include <Library/gpio.h>
 
 /**
