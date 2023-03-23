@@ -21,7 +21,6 @@ typedef UINT32 uint32_t;
 typedef UINT64 uint64_t;
 
 typedef UINTN size_t;
-typedef BOOLEAN bool;
 typedef BOOLEAN status_t;
 typedef UINTN addr_t;
 typedef UINTN paddr_t;
@@ -49,8 +48,6 @@ typedef unsigned long u_long;
 #endif
 
 #define ERR_INVALID_ARGS -8
-
-#define UINT_MAX MAX_UINTN
 
 #define writel(v, a) MmioWrite32((UINTN)(a), (UINT32)(v))
 #define readl(a) MmioRead32((UINTN)(a))
@@ -99,9 +96,6 @@ typedef unsigned long u_long;
 #define ERR_RECURSE_TOO_DEEP -23
 #define ERR_NOT_SUPPORTED -24
 #define ERR_TOO_BIG -25
-
-#define true TRUE
-#define false FALSE
 
 #define strcmp(s1, s2) ((int)AsciiStrCmp((s1), (s2)))
 #define strncmp(s1, s2, n) ((int)AsciiStrnCmp((s1), (s2), (n)))
@@ -160,10 +154,10 @@ extern void udelay(unsigned usecs);
 //#define udelay(usecs) MicroSecondDelay ((usecs))
 //extern void udelay(unsigned usecs);
 
-#define arch_clean_invalidate_cache_range(start, len) WriteBackInvalidateDataCacheRange ((VOID *)(UINTN)(start), (UINTN)(len))
-#define arch_invalidate_cache_range(start, len) InvalidateDataCacheRange ((VOID *)(UINTN)(start), (UINTN)(len));
+//#define arch_clean_invalidate_cache_range(start, len) WriteBackInvalidateDataCacheRange ((VOID *)(UINTN)(start), (UINTN)(len));
+//#define arch_invalidate_cache_range(start, len) InvalidateDataCacheRange ((VOID *)(UINTN)(start), (UINTN)(len));
 
-#define __ALWAYS_INLINE __attribute__ ((always_inline))
+#define __ALWAYS_INLINE __attribute__ ((always_inline));
 
 /* Defines added from qcom_lk.h */
 

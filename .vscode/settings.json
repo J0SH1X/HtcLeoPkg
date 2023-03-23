@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "types.h": "c",
+        "reg.h": "c",
+        "lkenvlib.h": "c"
+    }
+}
