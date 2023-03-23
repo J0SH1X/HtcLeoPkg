@@ -39,8 +39,7 @@ MicroPInitialize(VOID)
 
   
   EFI_STATUS         Status = EFI_SUCCESS;
-  DEBUG((EFI_D_ERROR, "Init MicroPLib"));
-  mdelay(2000);
+  DEBUG((EFI_D_ERROR, "Init MicroPLib \n"));
 	microp_i2c_probe(&microp_pdata);
 
 

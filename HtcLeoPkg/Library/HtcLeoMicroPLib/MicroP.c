@@ -17,8 +17,7 @@ int msm_microp_i2c_status;
 
 int microp_i2c_read(u_int8_t addr, u_int8_t *data, int length)
 {
-	DEBUG((EFI_D_ERROR, "MICROP_I2C_READ"));
-	mdelay(3000);
+	DEBUG((EFI_D_ERROR, "MICROP_I2C_READ \n"));
 	if (!pdata)
 		return -1;
 		
@@ -28,14 +27,14 @@ int microp_i2c_read(u_int8_t addr, u_int8_t *data, int length)
 	};
 	
 	int retry;
-		DEBUG((EFI_D_ERROR, "FOR LOOP ABOUT TO HAPPEN"));
-	mdelay(3000);
+		DEBUG((EFI_D_ERROR, "FOR LOOP ABOUT TO HAPPEN \n"));
 	for (retry = 0; retry <= MSM_I2C_READ_RETRY_TIMES; retry++) {
-				DEBUG((EFI_D_ERROR, "FOR LOOP ENTERED, ITERATION: ", retry));
-	mdelay(3000);
+				DEBUG((EFI_D_ERROR, "FOR LOOP ENTERED \n"));
 		if (msm_i2c_xfer(msgs, 2) == 2){
 			break;
 			}
+			DEBUG((EFI_D_ERROR, "MSM_I2C_XFER FINISHED YAY !!!!!! \n"));
+			mdelay(5000);
 		mdelay(5);
 	}
 	if (retry > MSM_I2C_WRITE_RETRY_TIMES)
@@ -273,24 +272,20 @@ err_irq_en:
 
 void microp_i2c_probe(struct microp_platform_data *kpdata)
 {
-	DEBUG((EFI_D_ERROR, "MICRO_P probing"));
-	mdelay(3000);
+	DEBUG((EFI_D_ERROR, "MICRO_P probing \n"));
 	//if(!kpdata || pdata) return;
 
 	pdata = kpdata;
 	
 	u_int8_t data[6];
-	DEBUG((EFI_D_ERROR, "IF ABOUT TO HAPPEN"));
-	mdelay(3000);
+	DEBUG((EFI_D_ERROR, "IF ABOUT TO HAPPEN \n"));
 	if (microp_i2c_read(MICROP_I2C_RCMD_VERSION, data, 2) < 0) {
 		msm_microp_i2c_status = 0;
 		//printf("microp get version failed!\n");
-        DEBUG((EFI_D_ERROR, "microp get version failed!"));
-		mdelay(5000);
+        DEBUG((EFI_D_ERROR, "microp get version failed! \n"));
 		return;
 	}
 	//printf("HTC MicroP 0x%02X\n", data[0]);
     DEBUG((EFI_D_ERROR, "HTC MicroP 0x%02X\n", data[0]));
-	mdelay(5000);
 	msm_microp_i2c_status = 1;
 }

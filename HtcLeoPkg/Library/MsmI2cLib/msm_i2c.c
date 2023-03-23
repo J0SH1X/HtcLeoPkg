@@ -239,22 +239,38 @@ static enum handler_return msm_i2c_isr(void *arg) {
 
 static int msm_i2c_poll_notbusy(int warn)
 {
+	DEBUG((EFI_D_ERROR, "MSM_I2C_POLL_NOTBUSY FUNCTION \n"));
 	uint32_t retries = 0;
 	while (retries != 200) {
+		DEBUG((EFI_D_ERROR, "WHILE LOOP ENTERED \n"));
 		uint32_t status = readl(dev.pdata->i2c_base + I2C_STATUS);
-
+		DEBUG((EFI_D_ERROR, "READL DONE \n"));
 		if (!(status & I2C_STATUS_BUS_ACTIVE)) {
+			DEBUG((EFI_D_ERROR, "FIRST IF IS TRUE \n"));
+
 			if (retries && warn){
 				I2C_DBG(DEBUGLEVEL, "Warning bus was busy (%d)\n", retries);
+				DEBUG((EFI_D_ERROR, "Warning bus was busy retries=%d\n", retries));
+				mdelay(20000);
 				return 0;
-			}
+			}else {
+			DEBUG((EFI_D_ERROR, "2nd IF CONDITION WAS NOT TRUE \n"));
+
+		}
+		}else {
+			DEBUG((EFI_D_ERROR, "1st IF CONDITION WAS NOT TRUE \n"));
+
 		}
 		
-		if (retries++ > 100)
+		if (retries++ > 100){
+			DEBUG((EFI_D_ERROR, "THIRD IF IS TRUE \n"));
 			mdelay(10);
+			}
 	}
 	
-	I2C_ERR("Error waiting for notbusy\n");
+	//I2C_ERR("Error waiting for notbusy\n");
+	DEBUG((EFI_D_ERROR, "Error waiting for notbusy \n"));
+	mdelay(2000);
 	return ERR_TIMED_OUT;
 }
 
@@ -324,22 +340,37 @@ static int msm_i2c_recover_bus_busy(void)
 
 int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 {
+	DEBUG((EFI_D_ERROR, "MSM_I2C_XFER FUNCTION \n"));
 	int ret, ret_wait;
-
+	DEBUG((EFI_D_ERROR, "ABOUT TO ENABLE SOME CLOCK \n"));
 	clk_enable(dev.pdata->clk_nr);
+	DEBUG((EFI_D_ERROR, "CLOCK ENABLED \n"));
+	DEBUG((EFI_D_ERROR, "ABOUT TO UNMASK SOME INTERRUPT \n"));
 	unmask_interrupt(dev.pdata->irq_nr);
+	DEBUG((EFI_D_ERROR, "INTTERRUPT UNMASKED \n"));
 
 	ret = msm_i2c_poll_notbusy(1);
+	DEBUG((EFI_D_ERROR, "MSM_I2C_POLL_NOTBUSY RETURNED %d\n", ret));
+	mdelay(2000);
 
 	if (ret) {
+		DEBUG((EFI_D_ERROR, "ABOUT TO RECOVER BUS BUSY \n", ret));
+			mdelay(2000);
 		ret = msm_i2c_recover_bus_busy();
-		if (ret)
+		DEBUG((EFI_D_ERROR, "BUS BUSY RECOVERD \n", ret));
+			mdelay(2000);
+		if (ret){
+			DEBUG((EFI_D_ERROR, "RECOVER FAILED ENTERING ERROR STATE \n", ret));
+			mdelay(20000);
 			goto err;
+			}
 	}
 
 	//enter_critical_section();
 	if (dev.flush_cnt) {
 		I2C_DBG(DEBUGLEVEL, "%d unrequested bytes read\n", dev.flush_cnt);
+		DEBUG((EFI_D_ERROR, "%d unrequested bytes read\n", dev.flush_cnt));
+		mdelay(2000);
 	}
 	dev.msg = msgs;
 	dev.rem = num;
@@ -348,7 +379,12 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 	dev.need_flush = false;
 	dev.flush_cnt = 0;
 	dev.cnt = msgs->len;
+	DEBUG((EFI_D_ERROR, "ABOUT TO LOCK INTERRUPT\n"));
+	mdelay(2000);
 	msm_i2c_interrupt_locked();
+	DEBUG((EFI_D_ERROR, "INTERRUPT LOCKED\n"));
+	mdelay(2000);
+	
 	//exit_critical_section();
 
 	/*
@@ -356,10 +392,14 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 	 * and wake us up with dev.err set if there was an error
 	 */
 	ret_wait = msm_i2c_poll_notbusy(0); /* Read may not have stopped in time */
+	DEBUG((EFI_D_ERROR, "RET VALUE IS HERE FROM NOTBUSY %d\n", ret_wait));
+	mdelay(2000);
 	
 	//enter_critical_section();
 	if (dev.flush_cnt) {
 		I2C_DBG(DEBUGLEVEL, "%d unrequested bytes read\n", dev.flush_cnt);
+		DEBUG((EFI_D_ERROR, "%d unrequested bytes read\n", dev.flush_cnt));
+		mdelay(2000);
 	}
 	ret = dev.ret;
 	dev.msg = NULL;
