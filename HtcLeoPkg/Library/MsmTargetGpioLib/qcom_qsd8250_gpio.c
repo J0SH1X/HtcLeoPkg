@@ -35,6 +35,7 @@
 #include <Library/InterruptsLib.h>
 #include <Library/pcom.h>
 #include <Library/gpio.h>
+#include <Library/types.h>
 
 #include <Chipset/gpio.h>
 #include <Chipset/interrupts.h>
