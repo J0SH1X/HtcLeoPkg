@@ -64,13 +64,14 @@
   ArmSmcLib|ArmPkg/Library/ArmSmcLib/ArmSmcLib.inf
   ArmMmuLib|ArmPkg/Library/ArmMmuLib/ArmMmuBaseLib.inf
 
-  ResetSystemLib|ArmPkg/Library/ArmSmcPsciResetSystemLib/ArmSmcPsciResetSystemLib.inf
+  # ResetSystemLib|ArmPkg/Library/ArmSmcPsciResetSystemLib/ArmSmcPsciResetSystemLib.inf
+  ResetSystemLib|HtcLeoPkg/Library/HtcLeoPlatformResetLib/HtcLeoPlatformResetLib.inf
 
   # ARM PL011 UART Driver
   PL011UartClockLib|ArmPlatformPkg/Library/PL011UartClockLib/PL011UartClockLib.inf
   PL011UartLib|ArmPlatformPkg/Library/PL011UartLib/PL011UartLib.inf
 
-  TimerLib|HtcLeoPkg/Library/MsmTargetTimerLib/MsmTargetTimerLib.inf
+  TimerLib|HtcLeoPkg/Library/TimerLib/TimerLib.inf
 
   InterruptsLib|HtcLeoPkg/Library/InterruptsLib/InterruptsLib.inf
 

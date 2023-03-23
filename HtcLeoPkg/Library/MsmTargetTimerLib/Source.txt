@@ -1,2 +1,0 @@
-Library base on :
-* https://github.com/sonic011gamer/Lumia520Pkg/tree/new/Library/MsmTargetTimerLib

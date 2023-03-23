@@ -1,1 +1,4 @@
-workspace
+BootShim/BootShim.bin
+ImageResources/bootpayload.bin
+ImageResources/uefi.img
+workspace/Build/

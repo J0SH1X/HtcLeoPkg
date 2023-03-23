@@ -40,7 +40,7 @@
   OrderedCollectionLib|MdePkg/Library/BaseOrderedCollectionRedBlackTreeLib/BaseOrderedCollectionRedBlackTreeLib.inf
   ArmLib|ArmPkg/Library/ArmLib/ArmBaseLib.inf
   ArmPlatformLib|HtcLeoPkg/Library/HtcLeoPkgLib/HtcLeoPkgLib.inf
-  TimerLib|HtcLeoPkg/Library/MsmTargetTimerLib/MsmTargetTimerLib.inf
+  TimerLib|HtcLeoPkg/Library/TimerLib/TimerLib.inf
   CompilerIntrinsicsLib|ArmPkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf
   CapsuleLib|MdeModulePkg/Library/DxeCapsuleLibNull/DxeCapsuleLibNull.inf
   PlatformBootManagerLib|HtcLeoPkg/Library/PlatformBootManagerLib/PlatformBootManagerLib.inf
@@ -90,7 +90,6 @@
   HtcLeoMicroPLib| HtcLeoPkg/Library/HtcLeoMicroPLib/MicroPLib.inf
 
   # SoC Drivers libraries
-  HtcLeoPlatformResetLib|HtcLeoPkg/Library/HtcLeoPlatformResetLib/HtcLeoPlatformResetLib.inf
   MsmTargetClockLib|HtcLeoPkg/Library/MsmTargetClockLib/MsmTargetClockLib.inf
   MsmTargetGpioLib|HtcLeoPkg/Library/MsmTargetGpioLib/MsmTargetGpioLib.inf
   HtcLeoVibrationLib|HtcLeoPkg/Library/HtcLeoVibrationLib/HtcLeoVibrationLib.inf
