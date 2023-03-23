@@ -46,11 +46,11 @@ I2CDxeInitialize(
 
 	DEBUG((EFI_D_ERROR, "I2CDxe init start\n"));
 
-	// Status = MsmI2cInitialize();
-  // ASSERT_EFI_ERROR(Status);
+	 Status = MsmI2cInitialize();
+   ASSERT_EFI_ERROR(Status);
 
-  // Status = MicroPInitialize();
-  // ASSERT_EFI_ERROR(Status);
+   Status = MicroPInitialize();
+   ASSERT_EFI_ERROR(Status);
 
 	DEBUG((EFI_D_ERROR, "I2CDxe init done!\n"));
   
