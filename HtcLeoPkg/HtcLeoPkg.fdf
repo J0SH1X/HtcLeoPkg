@@ -121,6 +121,7 @@ APRIORI DXE {
   # SoC Drivers
   INF HtcLeoPkg/Drivers/ClockDxe/ClockDxe.inf
   INF HtcLeoPkg/Drivers/GpioDxe/GpioDxe.inf
+  INF HtcLeoPkg/Drivers/I2CDxe/I2CDxe.inf
 
   #
   # Virtual Keyboard
