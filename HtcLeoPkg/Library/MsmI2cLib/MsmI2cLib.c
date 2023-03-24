@@ -26,6 +26,11 @@
 #include <Chipset/iomap.h>
 #include <Library/HtcLeoGpio.h>
 #include <Library/pcom.h>
+#include <Library/UefiLib.h>
+#include <Library/UefiBootServicesTableLib.h>
+
+#define MEMORY_REGION_ADDRESS 0xA9900000
+#define MEMORY_REGION_LENGTH 0x00100000
 
 
 void EFIAPI msm_set_i2c_mux(int mux_to_i2c) {
@@ -47,6 +52,47 @@ static struct msm_i2c_pdata i2c_pdata = {
 	.set_mux_to_i2c = &msm_set_i2c_mux,
 	.i2c_base = (void*)MSM_I2C_BASE,
 };
+
+EFI_STATUS dumpI2CMemory(void)
+{
+  EFI_STATUS status;
+  UINTN bufferSize = 0x00100000;
+
+  // Allocate a buffer to hold the memory dump
+  UINT8 *buffer = NULL;
+  status = gBS->AllocatePool(EfiBootServicesData, bufferSize, (VOID **)&buffer);
+  if (EFI_ERROR(status)) {
+    DEBUG((EFI_D_ERROR, "Failed to allocate memory: %r\n", status));
+    return status;
+  }
+
+  // Copy the memory region to the buffer
+  gBS->CopyMem(buffer, (VOID*)(UINTN)0xA9900000, bufferSize);
+
+  // Dump the buffer to the console
+  CHAR16* bufferString = NULL;
+  UnicodeSPrint(&bufferString, 0, L"Memory Dump:\n");
+  DEBUG((EFI_D_INFO, bufferString));
+  FreePool(bufferString);
+
+  for (UINTN i = 0; i < bufferSize; i++) {
+    if (i % 16 == 0) {
+      UnicodeSPrint(&bufferString, 0, L"%08X: ", (UINT32)(0xA9900000 + i));
+      DEBUG((EFI_D_INFO, bufferString));
+      FreePool(bufferString);
+    }
+    UnicodeSPrint(&bufferString, 0, L"%02X ", buffer[i]);
+    DEBUG((EFI_D_INFO, bufferString));
+    FreePool(bufferString);
+
+    if (i % 16 == 15) {
+      DEBUG((EFI_D_INFO, L"\n"));
+    }
+  }
+
+  FreePool(buffer);
+  return EFI_SUCCESS;
+}
 
 RETURN_STATUS
 EFIAPI

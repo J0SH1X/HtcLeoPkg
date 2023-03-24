@@ -27,18 +27,16 @@
 #include <Chipset/clock.h>
 #include <Library/InterruptsLib.h>
 #include <Library/LKEnvLib.h>
+#include <Library/HtcLeoGpio.h>
+#include <Library/MsmI2cLib.h>
+#include <Library/IoLib.h>
 
-#define DEBUG_I2C 0
+#define DEBUG_I2C 1
 
-#if DEBUG_I2C
-	#define I2C_DBG(lvl, fmt, x...) dprintf(lvl, fmt, ##x)
-	#define I2C_ERR(fmt, x...) 		dprintf(ALWAYS, fmt, ##x)
-	#define I2C_DBG_FUNC_LINE() 	dprintf(ALWAYS, "%s: %d\n", __func__, __LINE__)
-#else
+
 	#define I2C_DBG(lvl, fmt, x...)
 	#define I2C_ERR(fmt, x...)
 	#define I2C_DBG_FUNC_LINE()
-#endif
 
 enum {
 	I2C_WRITE_DATA 			= 0x00,
@@ -76,26 +74,49 @@ static int timeout;
 #if DEBUG_I2C
 static void dump_status(uint32_t status)
 {
-	I2C_DBG(DEBUGLEVEL, "STATUS (0x%.8x): ", status);
-	if (status & I2C_STATUS_BUS_MASTER)
+	DEBUG((EFI_D_ERROR, "I2C STATUS DUMP\n"));
+
+	I2C_DBG(DEBUGLEVEL, "STATUS (0x%.8x) ", status);
+	DEBUG((EFI_D_ERROR, "STATUS (0x%.8x) ", status));
+	if (status & I2C_STATUS_BUS_MASTER){
 		I2C_DBG(DEBUGLEVEL, "MST ");
-	if (status & I2C_STATUS_BUS_ACTIVE)
+		DEBUG((EFI_D_ERROR, "MST "));
+		}
+	if (status & I2C_STATUS_BUS_ACTIVE){
 		I2C_DBG(DEBUGLEVEL, "ACT ");
-	if (status & I2C_STATUS_INVALID_WRITE)
+		DEBUG((EFI_D_ERROR, "ACT "));
+	}
+	if (status & I2C_STATUS_INVALID_WRITE){
 		I2C_DBG(DEBUGLEVEL, "INV_WR ");
-	if (status & I2C_STATUS_ARB_LOST)
+		DEBUG((EFI_D_ERROR, "INV_WR "));
+		}
+	if (status & I2C_STATUS_ARB_LOST){
 		I2C_DBG(DEBUGLEVEL, "ARB_LST ");
-	if (status & I2C_STATUS_PACKET_NACKED)
+		DEBUG((EFI_D_ERROR, "ARB_LST "));
+		}
+	if (status & I2C_STATUS_PACKET_NACKED){
 		I2C_DBG(DEBUGLEVEL, "NAK ");
-	if (status & I2C_STATUS_BUS_ERROR)
+		DEBUG((EFI_D_ERROR, "NAK "));
+		}
+	if (status & I2C_STATUS_BUS_ERROR){
 		I2C_DBG(DEBUGLEVEL, "BUS_ERR ");
-	if (status & I2C_STATUS_RD_BUFFER_FULL)
+		DEBUG((EFI_D_ERROR, "BUS_ERR "));
+		}
+	if (status & I2C_STATUS_RD_BUFFER_FULL){
 		I2C_DBG(DEBUGLEVEL, "RD_FULL ");
-	if (status & I2C_STATUS_WR_BUFFER_FULL)
+		DEBUG((EFI_D_ERROR, "RD_FULL "));
+		}
+	if (status & I2C_STATUS_WR_BUFFER_FULL){
 		I2C_DBG(DEBUGLEVEL, "WR_FULL ");
-	if (status & I2C_STATUS_FAILED)
+		DEBUG((EFI_D_ERROR, "WR_FULL "));
+		}
+	if (status & I2C_STATUS_FAILED) {
 		I2C_DBG(DEBUGLEVEL, "FAIL 0x%x", (status & I2C_STATUS_FAILED));
+		DEBUG((EFI_D_ERROR, "FAIL 0x%x", (status & I2C_STATUS_FAILED)));
+		}
 	I2C_DBG(DEBUGLEVEL, "\n");
+	DEBUG((EFI_D_ERROR, "\n"));
+	mdelay(2000);
 }
 #endif
 
@@ -106,43 +127,60 @@ static void msm_i2c_write_delay(void)
 	 * scl to soon after driving sda low. Writing the data after the
 	 * scheduled release time for scl also avoids the bug.
 	 */
-	if (readl(dev.pdata->i2c_base + I2C_INTERFACE_SELECT) & I2C_INTERFACE_SELECT_SCL)
+	if (readl(dev.pdata->i2c_base + I2C_INTERFACE_SELECT) & I2C_INTERFACE_SELECT_SCL){
 		return;
+	}
 		
 	udelay(6);
 }
 
 static bool msm_i2c_fill_write_buffer(void)
 {
+	DEBUG((EFI_D_ERROR, "MSM_I2C_FILL_WRITE_BUFFER FUNCTION\n"));
 	uint16_t val;
 	if (dev.pos < 0) {
+		DEBUG((EFI_D_ERROR, "IF IN LINE 138 TRUE\n"));
+		DEBUG((EFI_D_ERROR, "dev.msg->addr(%x)\n", dev.msg->addr));
 		val = I2C_WRITE_DATA_ADDR_BYTE | dev.msg->addr << 1;
 		if (dev.msg->flags & I2C_M_RD)
 			val |= 1;
 			
 		if (dev.rem == 1 && dev.msg->len == 0)
 			val |= I2C_WRITE_DATA_LAST_BYTE;
-			
+				DEBUG((EFI_D_ERROR, "MSM_I2C_WRITE_DELAY ABOUT TO HAPPEN\n"));
 		msm_i2c_write_delay();
-		writel(val, dev.pdata->i2c_base + I2C_WRITE_DATA);
+		DEBUG((EFI_D_ERROR, "MSM_I2C_WRITE_DELAY HAPPENED\n"));
+
+		DEBUG((EFI_D_ERROR, "writel(val, dev.pdata->i2c_base + I2C_WRITE_DATA);\n"));
+		DEBUG((EFI_D_ERROR, "writel(%x, %x + %x)\n", val, dev.pdata->i2c_base, I2C_WRITE_DATA));
+		//writel(val, dev.pdata->i2c_base + I2C_WRITE_DATA);
+		//WriteUnaligned32((UINT32 *)(dev.pdata->i2c_base + I2C_WRITE_DATA), val);
+		//WriteReg16(dev.pdata->i2c_base + I2C_WRITE_DATA, val);
+		IoWrite16((UINTN)dev.pdata->i2c_base + I2C_WRITE_DATA, (UINT16)val);
 		dev.pos++;
+		DEBUG((EFI_D_ERROR, "writel(val, dev.pdata->i2c_base + I2C_WRITE_DATA); HAPPENED\n"));
 		
 		return true;
+	}else {
+		DEBUG((EFI_D_ERROR, "IF IN LINE 138 WAS NOT TRUE\n"));
 	}
 
-	if (dev.msg->flags & I2C_M_RD)
+	if (dev.msg->flags & I2C_M_RD){
 		return false;
+		}
 
-	if (!dev.cnt)
+	if (!dev.cnt){
 		return false;
+		}
 
 	/* Ready to take a byte */
 	val = dev.msg->buf[dev.pos];
 	if (dev.cnt == 1 && dev.rem == 1)
 		val |= I2C_WRITE_DATA_LAST_BYTE;
-
 	msm_i2c_write_delay();
-	writel(val, dev.pdata->i2c_base + I2C_WRITE_DATA);
+	//writel(val, dev.pdata->i2c_base + I2C_WRITE_DATA);
+	//WriteReg16(dev.pdata->i2c_base + I2C_WRITE_DATA, val);
+		IoWrite16((UINTN)dev.pdata->i2c_base + I2C_WRITE_DATA, (UINT16)val);
 	dev.pos++;
 	dev.cnt--;
 	
@@ -189,6 +227,8 @@ static void msm_i2c_read_buffer(void)
 
 static void msm_i2c_interrupt_locked(void)
 {
+	DEBUG((EFI_D_ERROR, "MSM_I2C_INTERRUPT_LOCKED FUNCTION\n"));
+	mdelay(2000);
 	uint32_t status	= readl(dev.pdata->i2c_base + I2C_STATUS);
 	bool not_done = true;
 
@@ -197,26 +237,38 @@ static void msm_i2c_interrupt_locked(void)
 #endif
 	if (!dev.msg) {
 		I2C_DBG(DEBUGLEVEL, "IRQ but nothing to do!, status %x\n", status);
+		DEBUG((EFI_D_ERROR, "IRQ but nothing to do!, status %x\n", status));
 		return;
 	}
 	
-	if (status & I2C_STATUS_ERROR_MASK)
+	if (status & I2C_STATUS_ERROR_MASK){
+		DEBUG((EFI_D_ERROR, "ERROR DETECTED ENTERING ERROR STATE\n"));
+		mdelay(2000);
 		goto out_err;
+		}
 
-	if (!(status & I2C_STATUS_WR_BUFFER_FULL))
+	if (!(status & I2C_STATUS_WR_BUFFER_FULL)){
+	DEBUG((EFI_D_ERROR, "FILL WRITE BUFFER ABOUT TO HAPPEN\n"));
 		not_done = msm_i2c_fill_write_buffer();
-		
-	if (status & I2C_STATUS_RD_BUFFER_FULL)
+		DEBUG((EFI_D_ERROR, "FILL WRITE BUFFER HAPPENED\n"));
+		}
+	if (status & I2C_STATUS_RD_BUFFER_FULL){
+		DEBUG((EFI_D_ERROR, "READ I2C BUFFER ABOUT TO HAPPEN\n"));
 		msm_i2c_read_buffer();
+		DEBUG((EFI_D_ERROR, "READ I2C BUFFER HAPPENED\n"));
+		}
 
 	if (dev.pos >= 0 && dev.cnt == 0) {
+		DEBUG((EFI_D_ERROR, "IF IN LINE 242 TRUE\n"));
 		if (dev.rem > 1) {
+			DEBUG((EFI_D_ERROR, "IF IN LINE 244 TRUE\n"));
 			dev.rem--;
 			dev.msg++;
 			dev.pos = -1;
 			dev.cnt = dev.msg->len;
 		}
 		else if (!not_done && !dev.need_flush) {
+			DEBUG((EFI_D_ERROR, "IF IN LINE 256 TRUE\n"));
 			timeout = 0;
 			return;
 		}
@@ -225,6 +277,7 @@ static void msm_i2c_interrupt_locked(void)
 
 out_err:
 	I2C_ERR("error, status %x\n", status);
+	DEBUG((EFI_D_ERROR, "error, status %x\n", status));
 	dev.ret = ERROR;
 	timeout = ERR_TIMED_OUT;
 }
@@ -251,7 +304,6 @@ static int msm_i2c_poll_notbusy(int warn)
 			if (retries && warn){
 				I2C_DBG(DEBUGLEVEL, "Warning bus was busy (%d)\n", retries);
 				DEBUG((EFI_D_ERROR, "Warning bus was busy retries=%d\n", retries));
-				mdelay(20000);
 				return 0;
 			}else {
 			DEBUG((EFI_D_ERROR, "2nd IF CONDITION WAS NOT TRUE \n"));
@@ -370,7 +422,6 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 	if (dev.flush_cnt) {
 		I2C_DBG(DEBUGLEVEL, "%d unrequested bytes read\n", dev.flush_cnt);
 		DEBUG((EFI_D_ERROR, "%d unrequested bytes read\n", dev.flush_cnt));
-		mdelay(2000);
 	}
 	dev.msg = msgs;
 	dev.rem = num;
@@ -380,11 +431,9 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 	dev.flush_cnt = 0;
 	dev.cnt = msgs->len;
 	DEBUG((EFI_D_ERROR, "ABOUT TO LOCK INTERRUPT\n"));
-	mdelay(2000);
 	msm_i2c_interrupt_locked();
 	DEBUG((EFI_D_ERROR, "INTERRUPT LOCKED\n"));
-	mdelay(2000);
-	
+
 	//exit_critical_section();
 
 	/*
@@ -412,16 +461,26 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 
 	if (ret_wait) {
 		I2C_DBG(DEBUGLEVEL, "Still busy after xfer completion\n");
+		DEBUG((EFI_D_ERROR, "Still busy after xfer completion\n"));
+		mdelay(2000);
 		ret_wait = msm_i2c_recover_bus_busy();
-		if (ret_wait)
+		if (ret_wait){
+			DEBUG((EFI_D_ERROR, "ERROR IN RECOVERING THE BUS\n"));
+			mdelay(5000);
 			goto err;
+		}
+			
 	}
 	if (timeout == ERR_TIMED_OUT) {
 		I2C_DBG(DEBUGLEVEL, "Transaction timed out\n");
+		DEBUG((EFI_D_ERROR, "Transaction timed out\n"));
+		mdelay(2000);
 		ret = ERR_TIMED_OUT;
 	}
 	if (ret < 0) {
 		I2C_ERR("Error during data xfer (%d)\n", ret);
+		DEBUG((EFI_D_ERROR, "Error during data xfer (%d)\n", ret));
+		mdelay(2000);
 		msm_i2c_recover_bus_busy();
 	}
 	/* if (timeout == ERR_TIMED_OUT) {
@@ -450,6 +509,8 @@ int msm_i2c_write(int chip, void *buf, size_t count)
 	int rc = ERR_NOT_READY;
 	if (!dev.pdata) {
 		I2C_DBG(ALWAYS, "[MSM-I2C]: %s: called when driver is not installed\n", __func__);
+		DEBUG((EFI_D_ERROR, "[MSM-I2C]: %s: called when driver is not installed\n", __func__));
+		mdelay(2000);
 		return rc;
 	}
 
@@ -475,6 +536,8 @@ int msm_i2c_read(int chip, uint8_t reg, void *buf, size_t count)
 	int rc = ERR_NOT_READY;
 	if (!dev.pdata) {
 		I2C_DBG(ALWAYS, "[MSM-I2C]: %s: called when driver is not installed\n", __func__);
+		DEBUG((EFI_D_ERROR, "[MSM-I2C]: %s: called when driver is not installed\n", __func__));
+		mdelay(2000);
 		return rc;
 	}
 
@@ -500,6 +563,8 @@ int msm_i2c_probe(struct msm_i2c_pdata* pdata)
 {
 	if (dev.pdata) {
 		I2C_DBG(ALWAYS, "[MSM-I2C]: already installed\n");
+		DEBUG((EFI_D_ERROR, "[MSM-I2C]: already installed\n"));
+		mdelay(2000);
 		return -1;
 	}
 	if (!pdata->set_mux_to_i2c)
@@ -523,8 +588,12 @@ int msm_i2c_probe(struct msm_i2c_pdata* pdata)
 	int fs_div = ((i2c_clk / target_clk) / 2) - 3;
 	int hs_div = 3;
 	int clk_ctl = ((hs_div & 0x7) << 8) | (fs_div & 0xff);
+	DEBUG((EFI_D_ERROR, "writel(%x, %x + %x)\n", clk_ctl, dev.pdata->i2c_base, I2C_CLK_CTL));
+	mdelay(3000);
 	writel(clk_ctl, dev.pdata->i2c_base + I2C_CLK_CTL);
 	I2C_DBG(DEBUGLEVEL, "msm_i2c_probe: clk_ctl %x, %d Hz\n", clk_ctl, i2c_clk / (2 * ((clk_ctl & 0xff) + 3)));
+	DEBUG((EFI_D_ERROR, "msm_i2c_probe: clk_ctl %x, %d Hz\n", clk_ctl, i2c_clk / (2 * ((clk_ctl & 0xff) + 3))));
+		mdelay(2000);
 
 	clk_disable(dev.pdata->clk_nr);
 	register_int_handler(dev.pdata->irq_nr, msm_i2c_isr, NULL);
