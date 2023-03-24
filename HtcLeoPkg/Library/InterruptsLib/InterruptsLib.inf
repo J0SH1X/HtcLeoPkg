@@ -16,6 +16,7 @@
 [LibraryClasses]
   BaseLib
   MemoryAllocationLib
+  IoLib
 
 [Sources.common]
   Interrupts.c

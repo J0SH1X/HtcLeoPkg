@@ -29,10 +29,10 @@
  * SUCH DAMAGE.
  */
 
-#include <Library/LKEnvLib.h>
 #include <PiDxe.h>
 #include <Library/DebugLib.h>
 #include <Library/BaseLib.h>
+#include <Library/IoLib.h>
 #include <Library/InterruptsLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/UefiBootServicesTableLib.h>
@@ -41,13 +41,6 @@
 #include <Chipset/irqs.h>
 #include <Chipset/iomap.h>
 #include <Chipset/interrupts.h>
-
-struct ihandler {
-	int_handler func;
-	void *arg;
-};
-
-static struct ihandler handler[NR_IRQS];
 
 typedef struct {
   UINTN                 Vector;
@@ -80,20 +73,6 @@ STATIC HANDLER_ENTRY* GetInterruptHandlerEntry (UINTN Vector)
   return NULL;
 }
 
-enum handler_return platform_irq(struct arm_iframe *frame)
-{
-  unsigned num;
-	enum handler_return ret;
-	num = readl(VIC_IRQ_VEC_RD);
-	num = readl(VIC_IRQ_VEC_PEND_RD);
-	if (num > NR_IRQS)
-		return 0;
-	writel(1 << (num & 31), (num > 31) ? VIC_INT_CLEAR1 : VIC_INT_CLEAR0);
-	ret = handler[num].func(handler[num].arg);
-	writel(0, VIC_IRQ_VEC_WR);
-	return ret;
-}
-
 /* Calls into the handler */
 VOID
 EFIAPI
@@ -103,6 +82,10 @@ InterruptsLibIrqHandler (
   )
 {
   EFI_TPL     OriginalTPL;
+
+  Source = MmioRead32(VIC_IRQ_VEC_RD);
+  Source = MmioRead32(VIC_IRQ_VEC_PEND_RD);
+  MmioWrite32((Source > 31) ? VIC_INT_CLEAR1 : VIC_INT_CLEAR0, 1 << (Source & 31));
 
   // get handler entry
   HANDLER_ENTRY* Entry = GetInterruptHandlerEntry ((UINTN)Source);
@@ -115,8 +98,7 @@ InterruptsLibIrqHandler (
 
   gBS->RestoreTPL (OriginalTPL);
 
-  // signal eoi
-  mInterrupt->EndOfInterrupt (mInterrupt, Source);
+  MmioWrite32(VIC_IRQ_VEC_WR, 0);
 }
 
 /* disables the interrupt */
