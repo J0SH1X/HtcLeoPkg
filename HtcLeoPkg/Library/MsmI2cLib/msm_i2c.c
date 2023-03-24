@@ -295,27 +295,20 @@ static int msm_i2c_poll_notbusy(int warn)
 	DEBUG((EFI_D_ERROR, "MSM_I2C_POLL_NOTBUSY FUNCTION \n"));
 	uint32_t retries = 0;
 	while (retries != 200) {
-		DEBUG((EFI_D_ERROR, "WHILE LOOP ENTERED \n"));
 		uint32_t status = readl(dev.pdata->i2c_base + I2C_STATUS);
-		DEBUG((EFI_D_ERROR, "READL DONE \n"));
+		uint32_t bit_value = (status >> 7) & 0x01;
+		DEBUG((EFI_D_ERROR, "Value of bit 7 is %d\n", bit_value));
 		if (!(status & I2C_STATUS_BUS_ACTIVE)) {
-			DEBUG((EFI_D_ERROR, "FIRST IF IS TRUE \n"));
 
 			if (retries && warn){
 				I2C_DBG(DEBUGLEVEL, "Warning bus was busy (%d)\n", retries);
 				DEBUG((EFI_D_ERROR, "Warning bus was busy retries=%d\n", retries));
-				return 0;
-			}else {
-			DEBUG((EFI_D_ERROR, "2nd IF CONDITION WAS NOT TRUE \n"));
-
-		}
-		}else {
-			DEBUG((EFI_D_ERROR, "1st IF CONDITION WAS NOT TRUE \n"));
-
+				
+			}
+			return 0;
 		}
 		
 		if (retries++ > 100){
-			DEBUG((EFI_D_ERROR, "THIRD IF IS TRUE \n"));
 			mdelay(10);
 			}
 	}
@@ -341,15 +334,20 @@ static int msm_i2c_recover_bus_busy(void)
 
 	if (status & I2C_STATUS_RD_BUFFER_FULL) {
 		I2C_DBG(DEBUGLEVEL, "Read buffer full, status %x, intf %x\n",  status, readl(dev.pdata->i2c_base + I2C_INTERFACE_SELECT));
-		writel(I2C_WRITE_DATA_LAST_BYTE, dev.pdata->i2c_base + I2C_WRITE_DATA);
+		DEBUG((EFI_D_ERROR, "Read buffer full, status %x, intf %x\n",  status, readl(dev.pdata->i2c_base + I2C_INTERFACE_SELECT)));
+		//writel(I2C_WRITE_DATA_LAST_BYTE, dev.pdata->i2c_base + I2C_WRITE_DATA);
+		IoWrite16((UINTN)dev.pdata->i2c_base + I2C_WRITE_DATA, (UINT16)I2C_WRITE_DATA_LAST_BYTE);
 		readl(dev.pdata->i2c_base + I2C_READ_DATA);
 	}
 	else if (status & I2C_STATUS_BUS_MASTER) {
 		I2C_DBG(DEBUGLEVEL, "Still the bus master, status %x, intf %x\n", status, readl(dev.pdata->i2c_base + I2C_INTERFACE_SELECT));
-		writel(I2C_WRITE_DATA_LAST_BYTE | 0xff, dev.pdata->i2c_base + I2C_WRITE_DATA);
+		DEBUG((EFI_D_ERROR, "Still the bus master, status %x, intf %x\n", status, readl(dev.pdata->i2c_base + I2C_INTERFACE_SELECT)));
+		//writel(I2C_WRITE_DATA_LAST_BYTE | 0xff, dev.pdata->i2c_base + I2C_WRITE_DATA);
+		IoWrite16((UINTN)dev.pdata->i2c_base + I2C_WRITE_DATA, (UINT16)I2C_WRITE_DATA_LAST_BYTE | 0xff);
 	}
 
 	I2C_DBG(DEBUGLEVEL, "i2c_scl: %d, i2c_sda: %d\n", gpio_get(dev.pdata->scl_gpio), gpio_get(dev.pdata->sda_gpio));
+	DEBUG((EFI_D_ERROR, "i2c_scl: %d, i2c_sda: %d\n", gpio_get(dev.pdata->scl_gpio), gpio_get(dev.pdata->sda_gpio)));
 
 	for (i = 0; i < 9; i++) {
 		if (gpio_get(dev.pdata->sda_gpio) && gpio_clk_status)
@@ -383,10 +381,12 @@ static int msm_i2c_recover_bus_busy(void)
 	status = readl(dev.pdata->i2c_base + I2C_STATUS);
 	if (!(status & I2C_STATUS_BUS_ACTIVE)) {
 		I2C_DBG(DEBUGLEVEL, "Bus busy cleared after %d clock cycles, status %x, intf %x\n", i, status, readl(dev.pdata->i2c_base + I2C_INTERFACE_SELECT));
+		DEBUG((EFI_D_ERROR, "Bus busy cleared after %d clock cycles, status %x, intf %x\n", i, status, readl(dev.pdata->i2c_base + I2C_INTERFACE_SELECT)));
 		return 0;
 	}
 	
 	I2C_DBG(DEBUGLEVEL, "Bus still busy, status %x, intf %x\n", status, readl(dev.pdata->i2c_base + I2C_INTERFACE_SELECT));
+	DEBUG((EFI_D_ERROR, "Bus still busy, status %x, intf %x\n", status, readl(dev.pdata->i2c_base + I2C_INTERFACE_SELECT)));
 	return ERR_NOT_READY;
 }
 
@@ -588,12 +588,12 @@ int msm_i2c_probe(struct msm_i2c_pdata* pdata)
 	int fs_div = ((i2c_clk / target_clk) / 2) - 3;
 	int hs_div = 3;
 	int clk_ctl = ((hs_div & 0x7) << 8) | (fs_div & 0xff);
-	DEBUG((EFI_D_ERROR, "writel(%x, %x + %x)\n", clk_ctl, dev.pdata->i2c_base, I2C_CLK_CTL));
-	mdelay(3000);
-	writel(clk_ctl, dev.pdata->i2c_base + I2C_CLK_CTL);
+	DEBUG((EFI_D_ERROR, "writel(%x, %x + %x)\n", clk_ctl, dev.pdata->i2c_base + I2C_CLK_CTL));
+	mdelay(1000);
+	//writel(clk_ctl, dev.pdata->i2c_base + I2C_CLK_CTL);
+	IoWrite16((UINTN)dev.pdata->i2c_base + I2C_CLK_CTL, (UINT16)clk_ctl)
 	I2C_DBG(DEBUGLEVEL, "msm_i2c_probe: clk_ctl %x, %d Hz\n", clk_ctl, i2c_clk / (2 * ((clk_ctl & 0xff) + 3)));
 	DEBUG((EFI_D_ERROR, "msm_i2c_probe: clk_ctl %x, %d Hz\n", clk_ctl, i2c_clk / (2 * ((clk_ctl & 0xff) + 3))));
-		mdelay(2000);
 
 	clk_disable(dev.pdata->clk_nr);
 	register_int_handler(dev.pdata->irq_nr, msm_i2c_isr, NULL);
