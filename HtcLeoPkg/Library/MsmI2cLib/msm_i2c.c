@@ -30,6 +30,19 @@
 #include <Library/HtcLeoGpio.h>
 #include <Library/MsmI2cLib.h>
 #include <Library/IoLib.h>
+#include <Library/BaseLib.h>
+#include <Uefi.h>
+#include <Library/UefiBootServicesTableLib.h>
+#include <Arch/disable_interrupts.h>
+//#include <Kernel/kernelthread.h>
+
+EFI_TPL OldTpl1;
+EFI_TPL OldTpl2;
+EFI_TPL OldTpl3;
+EFI_TPL OldTpl4;
+EFI_TPL OldTpl5;
+
+//EFI_BOOT_SERVICES *BootServices = SystemTable->BootServices;
 
 #define DEBUG_I2C 1
 
@@ -139,7 +152,7 @@ static bool msm_i2c_fill_write_buffer(void)
 	DEBUG((EFI_D_ERROR, "MSM_I2C_FILL_WRITE_BUFFER FUNCTION\n"));
 	uint16_t val;
 	if (dev.pos < 0) {
-		DEBUG((EFI_D_ERROR, "IF IN LINE 138 TRUE\n"));
+		DEBUG((EFI_D_ERROR, "IF IN LINE 155 TRUE\n"));
 		DEBUG((EFI_D_ERROR, "dev.msg->addr(%x)\n", dev.msg->addr));
 		val = I2C_WRITE_DATA_ADDR_BYTE | dev.msg->addr << 1;
 		if (dev.msg->flags & I2C_M_RD)
@@ -151,15 +164,13 @@ static bool msm_i2c_fill_write_buffer(void)
 		msm_i2c_write_delay();
 		DEBUG((EFI_D_ERROR, "MSM_I2C_WRITE_DELAY HAPPENED\n"));
 
-		DEBUG((EFI_D_ERROR, "writel(val, dev.pdata->i2c_base + I2C_WRITE_DATA);\n"));
-		DEBUG((EFI_D_ERROR, "writel(%x, %x + %x)\n", val, dev.pdata->i2c_base, I2C_WRITE_DATA));
-		//writel(val, dev.pdata->i2c_base + I2C_WRITE_DATA);
-		//WriteUnaligned32((UINT32 *)(dev.pdata->i2c_base + I2C_WRITE_DATA), val);
-		//WriteReg16(dev.pdata->i2c_base + I2C_WRITE_DATA, val);
-		IoWrite16((UINTN)dev.pdata->i2c_base + I2C_WRITE_DATA, (UINT16)val);
+		DEBUG((EFI_D_ERROR, "CRITICAL: writel(val, dev.pdata->i2c_base + I2C_WRITE_DATA);\n"));
+		DEBUG((EFI_D_ERROR, "CRITICAL: writel(%x, %x + %x)\n", val, dev.pdata->i2c_base, I2C_WRITE_DATA));
+		mdelay(1000);
+		writel(val, dev.pdata->i2c_base + I2C_WRITE_DATA);
 		dev.pos++;
 		DEBUG((EFI_D_ERROR, "writel(val, dev.pdata->i2c_base + I2C_WRITE_DATA); HAPPENED\n"));
-		
+		mdelay(10000);
 		return true;
 	}else {
 		DEBUG((EFI_D_ERROR, "IF IN LINE 138 WAS NOT TRUE\n"));
@@ -178,9 +189,9 @@ static bool msm_i2c_fill_write_buffer(void)
 	if (dev.cnt == 1 && dev.rem == 1)
 		val |= I2C_WRITE_DATA_LAST_BYTE;
 	msm_i2c_write_delay();
-	//writel(val, dev.pdata->i2c_base + I2C_WRITE_DATA);
-	//WriteReg16(dev.pdata->i2c_base + I2C_WRITE_DATA, val);
-		IoWrite16((UINTN)dev.pdata->i2c_base + I2C_WRITE_DATA, (UINT16)val);
+	DEBUG((EFI_D_ERROR, "writel(%x, %x + %x)\n", val, dev.pdata->i2c_base, I2C_WRITE_DATA));
+	mdelay(1000);
+	writel(val, dev.pdata->i2c_base + I2C_WRITE_DATA);
 	dev.pos++;
 	dev.cnt--;
 	
@@ -249,8 +260,10 @@ static void msm_i2c_interrupt_locked(void)
 
 	if (!(status & I2C_STATUS_WR_BUFFER_FULL)){
 	DEBUG((EFI_D_ERROR, "FILL WRITE BUFFER ABOUT TO HAPPEN\n"));
+	mdelay(5000);
 		not_done = msm_i2c_fill_write_buffer();
 		DEBUG((EFI_D_ERROR, "FILL WRITE BUFFER HAPPENED\n"));
+		mdelay(5000);
 		}
 	if (status & I2C_STATUS_RD_BUFFER_FULL){
 		DEBUG((EFI_D_ERROR, "READ I2C BUFFER ABOUT TO HAPPEN\n"));
@@ -273,6 +286,8 @@ static void msm_i2c_interrupt_locked(void)
 			return;
 		}
 	}
+	DEBUG((EFI_D_ERROR, "INTERRUPT RETURNING NOW\n"));
+	mdelay(2000);
 	return;
 
 out_err:
@@ -283,9 +298,13 @@ out_err:
 }
 
 static enum handler_return msm_i2c_isr(void *arg) {
-	//enter_critical_section();
+	enter_critical_section();
+	//OldTpl1 = gBS->RaiseTPL (TPL_HIGH_LEVEL);
+	//EfiAcquireLock(&MySpinLock);
 	msm_i2c_interrupt_locked();
-	//exit_critical_section();
+	//EfiReleaseLock(&MySpinLock);
+	//gBS->RestoreTPL (OldTpl1);
+	exit_critical_section();
 	
 	return INT_RESCHEDULE;
 }
@@ -293,6 +312,7 @@ static enum handler_return msm_i2c_isr(void *arg) {
 static int msm_i2c_poll_notbusy(int warn)
 {
 	DEBUG((EFI_D_ERROR, "MSM_I2C_POLL_NOTBUSY FUNCTION \n"));
+	mdelay(3000);
 	uint32_t retries = 0;
 	while (retries != 200) {
 		uint32_t status = readl(dev.pdata->i2c_base + I2C_STATUS);
@@ -335,15 +355,15 @@ static int msm_i2c_recover_bus_busy(void)
 	if (status & I2C_STATUS_RD_BUFFER_FULL) {
 		I2C_DBG(DEBUGLEVEL, "Read buffer full, status %x, intf %x\n",  status, readl(dev.pdata->i2c_base + I2C_INTERFACE_SELECT));
 		DEBUG((EFI_D_ERROR, "Read buffer full, status %x, intf %x\n",  status, readl(dev.pdata->i2c_base + I2C_INTERFACE_SELECT)));
-		//writel(I2C_WRITE_DATA_LAST_BYTE, dev.pdata->i2c_base + I2C_WRITE_DATA);
-		IoWrite16((UINTN)dev.pdata->i2c_base + I2C_WRITE_DATA, (UINT16)I2C_WRITE_DATA_LAST_BYTE);
+		writel(I2C_WRITE_DATA_LAST_BYTE, dev.pdata->i2c_base + I2C_WRITE_DATA);
+		//IoWrite16((UINTN)dev.pdata->i2c_base + I2C_WRITE_DATA, (UINT16)I2C_WRITE_DATA_LAST_BYTE);
 		readl(dev.pdata->i2c_base + I2C_READ_DATA);
 	}
 	else if (status & I2C_STATUS_BUS_MASTER) {
 		I2C_DBG(DEBUGLEVEL, "Still the bus master, status %x, intf %x\n", status, readl(dev.pdata->i2c_base + I2C_INTERFACE_SELECT));
 		DEBUG((EFI_D_ERROR, "Still the bus master, status %x, intf %x\n", status, readl(dev.pdata->i2c_base + I2C_INTERFACE_SELECT)));
-		//writel(I2C_WRITE_DATA_LAST_BYTE | 0xff, dev.pdata->i2c_base + I2C_WRITE_DATA);
-		IoWrite16((UINTN)dev.pdata->i2c_base + I2C_WRITE_DATA, (UINT16)I2C_WRITE_DATA_LAST_BYTE | 0xff);
+		writel(I2C_WRITE_DATA_LAST_BYTE | 0xff, dev.pdata->i2c_base + I2C_WRITE_DATA);
+		//IoWrite16((UINTN)dev.pdata->i2c_base + I2C_WRITE_DATA, (UINT16)I2C_WRITE_DATA_LAST_BYTE | 0xff);
 	}
 
 	I2C_DBG(DEBUGLEVEL, "i2c_scl: %d, i2c_sda: %d\n", gpio_get(dev.pdata->scl_gpio), gpio_get(dev.pdata->sda_gpio));
@@ -418,7 +438,9 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 			}
 	}
 
-	//enter_critical_section();
+	enter_critical_section();
+	//OldTpl2 = gBS->RaiseTPL (TPL_HIGH_LEVEL);
+	//EfiAcquireLock(&MySpinLock);
 	if (dev.flush_cnt) {
 		I2C_DBG(DEBUGLEVEL, "%d unrequested bytes read\n", dev.flush_cnt);
 		DEBUG((EFI_D_ERROR, "%d unrequested bytes read\n", dev.flush_cnt));
@@ -433,8 +455,12 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 	DEBUG((EFI_D_ERROR, "ABOUT TO LOCK INTERRUPT\n"));
 	msm_i2c_interrupt_locked();
 	DEBUG((EFI_D_ERROR, "INTERRUPT LOCKED\n"));
+	mdelay(5000);
 
-	//exit_critical_section();
+	exit_critical_section();
+	DEBUG((EFI_D_ERROR, "INTERRUPT LOCKED 2\n"));
+	mdelay(5000);
+	//EfiReleaseLock(&MySpinLock);
 
 	/*
 	 * Now that we've setup the xfer, the ISR will transfer the data
@@ -444,7 +470,9 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 	DEBUG((EFI_D_ERROR, "RET VALUE IS HERE FROM NOTBUSY %d\n", ret_wait));
 	mdelay(2000);
 	
-	//enter_critical_section();
+	enter_critical_section();
+	//OldTpl3 = gBS->RaiseTPL (TPL_HIGH_LEVEL);
+	//EfiAcquireLock(&MySpinLock);
 	if (dev.flush_cnt) {
 		I2C_DBG(DEBUGLEVEL, "%d unrequested bytes read\n", dev.flush_cnt);
 		DEBUG((EFI_D_ERROR, "%d unrequested bytes read\n", dev.flush_cnt));
@@ -457,7 +485,9 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 	dev.ret = 0;
 	dev.flush_cnt = 0;
 	dev.cnt = 0;
-	//exit_critical_section();
+	exit_critical_section();
+	//gBS->RestoreTPL (OldTpl3);
+	//EfiReleaseLock(&MySpinLock);
 
 	if (ret_wait) {
 		I2C_DBG(DEBUGLEVEL, "Still busy after xfer completion\n");
@@ -497,6 +527,8 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 		msm_i2c_recover_bus_busy();
 	} */
 err:
+DEBUG((EFI_D_ERROR, "ERROR STATE ENTERED I2C XFER"));
+mdelay(20000);
 	mask_interrupt(dev.pdata->irq_nr);
 	clk_disable(dev.pdata->clk_nr);
 	
@@ -572,7 +604,10 @@ int msm_i2c_probe(struct msm_i2c_pdata* pdata)
 
 	dev.pdata = pdata;
 	
-	//enter_critical_section();
+	enter_critical_section();
+	//OldTpl4 = gBS->RaiseTPL (TPL_HIGH_LEVEL);
+	
+	//EfiAcquireLock(&MySpinLock);
 	mask_interrupt(dev.pdata->irq_nr);
 	dev.pdata->set_mux_to_i2c(0);
 	clk_enable(dev.pdata->clk_nr);
@@ -590,15 +625,17 @@ int msm_i2c_probe(struct msm_i2c_pdata* pdata)
 	int clk_ctl = ((hs_div & 0x7) << 8) | (fs_div & 0xff);
 	DEBUG((EFI_D_ERROR, "writel(%x, %x + %x)\n", clk_ctl, dev.pdata->i2c_base + I2C_CLK_CTL));
 	mdelay(1000);
-	//writel(clk_ctl, dev.pdata->i2c_base + I2C_CLK_CTL);
-	IoWrite16((UINTN)dev.pdata->i2c_base + I2C_CLK_CTL, (UINT16)clk_ctl)
+	writel(clk_ctl, dev.pdata->i2c_base + I2C_CLK_CTL);
+	//IoWrite16((UINTN)dev.pdata->i2c_base + I2C_CLK_CTL, (UINT16)clk_ctl)
 	I2C_DBG(DEBUGLEVEL, "msm_i2c_probe: clk_ctl %x, %d Hz\n", clk_ctl, i2c_clk / (2 * ((clk_ctl & 0xff) + 3)));
 	DEBUG((EFI_D_ERROR, "msm_i2c_probe: clk_ctl %x, %d Hz\n", clk_ctl, i2c_clk / (2 * ((clk_ctl & 0xff) + 3))));
 
 	clk_disable(dev.pdata->clk_nr);
 	register_int_handler(dev.pdata->irq_nr, msm_i2c_isr, NULL);
 	unmask_interrupt(dev.pdata->irq_nr);
-	//exit_critical_section();
+	exit_critical_section();
+	//gBS->RestoreTPL (OldTpl4);
+	//EfiReleaseLock(&MySpinLock);
 
 	return 0;
 }
@@ -607,10 +644,14 @@ void msm_i2c_remove() {
 	if (!dev.pdata)
 		return;//if driver is not installed
 		
-	//enter_critical_section();
+	enter_critical_section();
+	//OldTpl5 = gBS->RaiseTPL (TPL_HIGH_LEVEL);
+	//EfiAcquireLock(&MySpinLock);
 	mask_interrupt(dev.pdata->irq_nr);
 	clk_disable(dev.pdata->clk_nr);
 	dev.pdata->set_mux_to_i2c(0);
 	dev.pdata = NULL;
-	//exit_critical_section();
+	exit_critical_section();
+	//gBS->RestoreTPL (OldTpl5);
+	//EfiReleaseLock(&MySpinLock);
 }

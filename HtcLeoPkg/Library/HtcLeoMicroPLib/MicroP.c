@@ -46,10 +46,15 @@ int microp_i2c_read(u_int8_t addr, u_int8_t *data, int length)
 #define MICROP_I2C_WRITE_BLOCK_SIZE 21
 int microp_i2c_write(u_int8_t addr, u_int8_t *cmd, int length)
 {
-	if (!pdata)
+	DEBUG((EFI_D_ERROR, "MICROP_I2C_WRITE \n"));
+	if (!pdata){
+		DEBUG((EFI_D_ERROR, "MICROP_I2C_WRITE: No pdata \n"));
 		return -1;
-	if (length >= MICROP_I2C_WRITE_BLOCK_SIZE)
+	}
+	if (length >= MICROP_I2C_WRITE_BLOCK_SIZE){
+		DEBUG((EFI_D_ERROR, "MICROP_I2C_WRITE: length >= 21 \n"));
 		return -1;
+		}
 	
 	u_int8_t cmd_buffer[MICROP_I2C_WRITE_BLOCK_SIZE];
 	
@@ -58,17 +63,27 @@ int microp_i2c_write(u_int8_t addr, u_int8_t *cmd, int length)
 	};
 	
 	cmd_buffer[0] = addr;
-	memcpy((void *)&cmd_buffer[1], (void *)cmd, length);
+	//memcpy((void *)&cmd_buffer[1], (void *)cmd, length);
+	DEBUG((EFI_D_ERROR, "MICROP_I2C_WRITE: CopyMem now \n"));
+	CopyMem((VOID *)&cmd_buffer[1], (VOID *)cmd, (UINTN)length);
+	mdelay(1000);
 	
 	int retry;
 	for (retry = 0; retry <= MSM_I2C_WRITE_RETRY_TIMES; retry++) {
-		if (msm_i2c_xfer(msg, 1) == 1)
+		if (msm_i2c_xfer(msg, 1) == 1){
+			DEBUG((EFI_D_ERROR, "MICROP_I2C_WRITE: xfer success ??? \n"));
+			mdelay(2000);
 			break;
+			}
 		mdelay(5);
 	}
-	if (retry > MSM_I2C_WRITE_RETRY_TIMES)
+	if (retry > MSM_I2C_WRITE_RETRY_TIMES){
+		DEBUG((EFI_D_ERROR, "MICROP_I2C_WRITE: xfer timeout \n"));
+		mdelay(2000);
 		return -1;
-	
+	}
+	DEBUG((EFI_D_ERROR, "MICROP_I2C_WRITE: returning 0 \n"));
+	mdelay(1000);
 	return 0;
 }
 
@@ -272,13 +287,11 @@ err_irq_en:
 
 void microp_i2c_probe(struct microp_platform_data *kpdata)
 {
-	DEBUG((EFI_D_ERROR, "MICRO_P probing \n"));
 	//if(!kpdata || pdata) return;
 
 	pdata = kpdata;
 	
 	u_int8_t data[6];
-	DEBUG((EFI_D_ERROR, "IF ABOUT TO HAPPEN \n"));
 	if (microp_i2c_read(MICROP_I2C_RCMD_VERSION, data, 2) < 0) {
 		msm_microp_i2c_status = 0;
 		//printf("microp get version failed!\n");

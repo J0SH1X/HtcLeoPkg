@@ -2,6 +2,10 @@
     "files.associations": {
         "types.h": "c",
         "reg.h": "c",
-        "lkenvlib.h": "c"
+        "lkenvlib.h": "c",
+        "msm_i2c.h": "c",
+        "htcleogpio.h": "c",
+        "random": "c",
+        "malloc.h": "c"
     }
 }

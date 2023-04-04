@@ -84,6 +84,7 @@
   MsmPcomLib|HtcLeoPkg/Library/MsmPcomLib/MsmPcomLib.inf
   MsmPcomClientLib|HtcLeoPkg/Library/MsmPcomClientLib/MsmPcomClientLib.inf
   MsmI2cLib|HtcLeoPkg/Library/MsmI2cLib/MsmI2cLib.inf
+  OpsLib|HtcLeoPkg/Library/OpsLib/OpsLib.inf
 
   #Target Libraries
 
@@ -92,6 +93,7 @@
   # SoC Drivers libraries
   MsmTargetClockLib|HtcLeoPkg/Library/MsmTargetClockLib/MsmTargetClockLib.inf
   MsmTargetGpioLib|HtcLeoPkg/Library/MsmTargetGpioLib/MsmTargetGpioLib.inf
+  MsmTargetTimerLib|HtcLeoPkg/Library/MsmTargetTimerLib/MsmTargetTimerLib.inf
   HtcLeoVibrationLib|HtcLeoPkg/Library/HtcLeoVibrationLib/HtcLeoVibrationLib.inf
 
 [LibraryClasses.common.SEC]

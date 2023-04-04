@@ -49,8 +49,13 @@ typedef unsigned long u_long;
 
 #define ERR_INVALID_ARGS -8
 
-#define writel(v, a) MmioWrite32((UINTN)(a), (UINT32)(v))
-#define readl(a) MmioRead32((UINTN)(a))
+#define RMWREG64(addr, startbit, width, val) *REG64(addr) = (*REG64(addr) & ~(((1<<(width)) - 1) << (startbit))) | ((val) << (startbit))
+#define RMWREG32(addr, startbit, width, val) *REG32(addr) = (*REG32(addr) & ~(((1<<(width)) - 1) << (startbit))) | ((val) << (startbit))
+#define RMWREG16(addr, startbit, width, val) *REG16(addr) = (*REG16(addr) & ~(((1<<(width)) - 1) << (startbit))) | ((val) << (startbit))
+#define RMWREG8(addr, startbit, width, val) *REG8(addr) = (*REG8(addr) & ~(((1<<(width)) - 1) << (startbit))) | ((val) << (startbit))
+
+#define writel(v, a) MmioWrite32((UINTN)(a), (UINT16)(v))
+#define readl(a) (*REG32(a))
 #define writeb(v, a) MmioWrite8((UINTN)(a), (UINT8)(v))
 #define readb(a) MmioRead8((UINTN)(a))
 #define writehw(v, a) MmioWrite16((UINTN)(a), (UINT16)(v))

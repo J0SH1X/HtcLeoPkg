@@ -20,52 +20,10 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef __ARCH_OPS_H
-#define __ARCH_OPS_H
+#ifndef __ASM_H
+#define __ASM_H
 
-#ifndef ASSEMBLY
-
-#include <Library/types.h>
-#include <Library/compiler.h>
-
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
-int atomic_swap(volatile int *ptr, int val);
-int atomic_add(volatile int *ptr, int val);
-int atomic_and(volatile int *ptr, int val);
-int atomic_or(volatile int *ptr, int val);
-
-#endif // !ASSEMBLY
-#define ICACHE 1
-#define DCACHE 2
-#define UCACHE (ICACHE|DCACHE)
-#ifndef ASSEMBLY
-
-void arch_disable_cache(uint flags);
-void arch_enable_cache(uint flags);
-
-void arch_clean_cache_range(addr_t start, size_t len);
-void arch_clean_invalidate_cache_range(addr_t start, size_t len);
-void arch_invalidate_cache_range(addr_t start, size_t len);
-void arch_sync_cache_range(addr_t start, size_t len);
-	
-void arch_idle(void);
-
-void arch_disable_mmu(void);
-
-void arch_switch_stacks_and_call(addr_t call, addr_t stack) __NO_RETURN;
-uint32_t arch_cycle_count(void);
-
-#if defined(__cplusplus)
-}
-#endif
-
-#endif // !ASSEMBLY
-
-#if ARCH_ARM
-#include <arch/arm/ops.h>
-#endif
+//#define FUNCTION(x) .global x; .type x,@function; x:
+#define FUNCTION(x) .global x; x:
 
 #endif

@@ -20,52 +20,21 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef __ARCH_OPS_H
-#define __ARCH_OPS_H
+#include <Arch/ops.h>
+#include <Library/asm.h>
 
-#ifndef ASSEMBLY
+.text
 
-#include <Library/types.h>
-#include <Library/compiler.h>
+/* void arch_enable_ints(void); */
+FUNCTION(arch_enable_ints)
+	mrs	r0, cpsr
+	bic	r0, r0, #(1<<7)		/* clear the I bit */
+	msr	cpsr_c, r0
+	bx	lr
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
-int atomic_swap(volatile int *ptr, int val);
-int atomic_add(volatile int *ptr, int val);
-int atomic_and(volatile int *ptr, int val);
-int atomic_or(volatile int *ptr, int val);
-
-#endif // !ASSEMBLY
-#define ICACHE 1
-#define DCACHE 2
-#define UCACHE (ICACHE|DCACHE)
-#ifndef ASSEMBLY
-
-void arch_disable_cache(uint flags);
-void arch_enable_cache(uint flags);
-
-void arch_clean_cache_range(addr_t start, size_t len);
-void arch_clean_invalidate_cache_range(addr_t start, size_t len);
-void arch_invalidate_cache_range(addr_t start, size_t len);
-void arch_sync_cache_range(addr_t start, size_t len);
-	
-void arch_idle(void);
-
-void arch_disable_mmu(void);
-
-void arch_switch_stacks_and_call(addr_t call, addr_t stack) __NO_RETURN;
-uint32_t arch_cycle_count(void);
-
-#if defined(__cplusplus)
-}
-#endif
-
-#endif // !ASSEMBLY
-
-#if ARCH_ARM
-#include <arch/arm/ops.h>
-#endif
-
-#endif
+/* void arch_disable_ints(void); */
+FUNCTION(arch_disable_ints)
+	mrs	r0, cpsr
+	orr	r0, r0, #(1<<7)
+	msr	cpsr_c, r0
+	bx	lr

@@ -26,6 +26,7 @@
 #include <Chipset/irqs.h>
 #include <Chipset/clock.h>
 #include <Chipset/timer.h>
+#include <Library/types.h>
 
 #define TCX0               19200000
 #define GLBL_CLK_ENA       ((UINT32)MSM_CLK_CTL_BASE)
