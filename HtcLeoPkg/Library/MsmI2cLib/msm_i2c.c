@@ -167,7 +167,7 @@ static bool msm_i2c_fill_write_buffer(void)
 		DEBUG((EFI_D_ERROR, "CRITICAL: writel(val, dev.pdata->i2c_base + I2C_WRITE_DATA);\n"));
 		DEBUG((EFI_D_ERROR, "CRITICAL: writel(%x, %x + %x)\n", val, dev.pdata->i2c_base, I2C_WRITE_DATA));
 		mdelay(1000);
-		writel(val, dev.pdata->i2c_base + I2C_WRITE_DATA);
+		//writel(val, dev.pdata->i2c_base + I2C_WRITE_DATA);
 		dev.pos++;
 		DEBUG((EFI_D_ERROR, "writel(val, dev.pdata->i2c_base + I2C_WRITE_DATA); HAPPENED\n"));
 		mdelay(10000);
@@ -489,12 +489,12 @@ int msm_i2c_xfer(struct i2c_msg msgs[], int num)
 	//gBS->RestoreTPL (OldTpl3);
 	//EfiReleaseLock(&MySpinLock);
 
-	if (ret_wait) {
+	if (ret_wait != 0) {
 		I2C_DBG(DEBUGLEVEL, "Still busy after xfer completion\n");
 		DEBUG((EFI_D_ERROR, "Still busy after xfer completion\n"));
 		mdelay(2000);
 		ret_wait = msm_i2c_recover_bus_busy();
-		if (ret_wait){
+		if (ret_wait != 0){
 			DEBUG((EFI_D_ERROR, "ERROR IN RECOVERING THE BUS\n"));
 			mdelay(5000);
 			goto err;
