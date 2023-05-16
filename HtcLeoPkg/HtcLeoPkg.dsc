@@ -88,6 +88,8 @@
   MsmTargetClockLib|HtcLeoPkg/Library/MsmTargetClockLib/MsmTargetClockLib.inf
   MsmTargetGpioLib|HtcLeoPkg/Library/MsmTargetGpioLib/MsmTargetGpioLib.inf
   HtcLeoVibrationLib|HtcLeoPkg/Library/HtcLeoVibrationLib/HtcLeoVibrationLib.inf
+  KeypadDeviceHelperLib|HtcLeoPkg/Library/KeypadDeviceHelperLib/KeypadDeviceHelperLib.inf
+  KeypadDeviceImplLib|HtcLeoPkg/Library/KeypadDeviceImplLib/KeypadDeviceImplLib.inf
 
 [LibraryClasses.common.SEC]
   PrePiLib|EmbeddedPkg/Library/PrePiLib/PrePiLib.inf
@@ -234,7 +236,8 @@
   HtcLeoPkg/Drivers/ClockDxe/ClockDxe.inf
   HtcLeoPkg/Drivers/GpioDxe/GpioDxe.inf
   HtcLeoPkg/Drivers/SdccDxe/SdccDxe.inf
-
+  HtcLeoPkg/Drivers/GenericKeypadDeviceDxe/GenericKeypadDeviceDxe.inf
+  HtcLeoPkg/Drivers/KeypadDxe/KeypadDxe.inf
   #
   # Virtual Keyboard
   #
@@ -246,6 +249,7 @@
   HtcLeoPkg/Drivers/HtcLeoPkgDxe/HtcLeoPkgDxe.inf
   HtcLeoPkg/Drivers/SimpleFbDxe/SimpleFbDxe.inf
   HtcLeoPkg/Drivers/LogoDxe/LogoDxe.inf
+
 
   #
   # USB Host Support

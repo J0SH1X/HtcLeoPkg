@@ -35,7 +35,7 @@
 [Packages]
   MdePkg/MdePkg.dec
   MdeModulePkg/MdeModulePkg.dec
-  Lumia930Pkg/Lumia930Pkg.dec
+  HtcLeoPkg/HtcLeoPkg.dec
 
 [LibraryClasses]
   MemoryAllocationLib
@@ -55,3 +55,4 @@
   gEfiSimpleTextInProtocolGuid                  ## BY_START
   gEfiSimpleTextInputExProtocolGuid             ## BY_START
   gEFIDroidKeypadDeviceProtocolGuid
+  gEfiDevicePathProtocolGuid
