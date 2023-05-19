@@ -88,6 +88,7 @@
   MsmTargetClockLib|HtcLeoPkg/Library/MsmTargetClockLib/MsmTargetClockLib.inf
   MsmTargetGpioLib|HtcLeoPkg/Library/MsmTargetGpioLib/MsmTargetGpioLib.inf
   HtcLeoVibrationLib|HtcLeoPkg/Library/HtcLeoVibrationLib/HtcLeoVibrationLib.inf
+  HtcLeoUsbDebugLib|HtcLeoPkg/Library/HtcLeoUsbDebugLib/HtcLeoUsbDebugLib.inf
   KeypadDeviceHelperLib|HtcLeoPkg/Library/KeypadDeviceHelperLib/KeypadDeviceHelperLib.inf
   KeypadDeviceImplLib|HtcLeoPkg/Library/KeypadDeviceImplLib/KeypadDeviceImplLib.inf
 
@@ -237,7 +238,7 @@
   HtcLeoPkg/Drivers/GpioDxe/GpioDxe.inf
   HtcLeoPkg/Drivers/SdccDxe/SdccDxe.inf
   HtcLeoPkg/Drivers/GenericKeypadDeviceDxe/GenericKeypadDeviceDxe.inf
-  HtcLeoPkg/Drivers/KeypadDxe/KeypadDxe.inf
+  HtcLeoPkg/Drivers/KeyPadDxe/KeyPadDxe.inf
   #
   # Virtual Keyboard
   #
@@ -308,6 +309,7 @@
   MdeModulePkg/Universal/SetupBrowserDxe/SetupBrowserDxe.inf
   MdeModulePkg/Universal/DriverHealthManagerDxe/DriverHealthManagerDxe.inf
   MdeModulePkg/Universal/BdsDxe/BdsDxe.inf
+  HtcLeoPkg/Application/ChargerApp/ChargerApp.inf
   MdeModulePkg/Application/UiApp/UiApp.inf {
     <LibraryClasses>
       NULL|MdeModulePkg/Library/DeviceManagerUiLib/DeviceManagerUiLib.inf
