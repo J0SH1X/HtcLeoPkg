@@ -30,6 +30,9 @@ static uint32_t key_colgpio[] = {
 };
 #define ASZ(x) ARRAY_SIZE(x)
 
+//volume down 32,41 31,41
+//home 33,41, 32,41
+//dial 33,41 31,41
 
 
 
@@ -38,7 +41,7 @@ static HTCLEO_BUTTON_TYPE htcleo_keymap[3 * 3] = {
 	[KEYMAP_INDEX(0, 0)] = KEY_BACK,		//  Back Button again, mapped
 	[KEYMAP_INDEX(0, 1)] = KEY_VOLUMEDOWN,	// Volume Down
 	[KEYMAP_INDEX(1, 0)] = KEY_BACK,		// Back Button, mapped
-	[KEYMAP_INDEX(1, 1)] = KEY_HOME,		// Home Button
+	[KEYMAP_INDEX(1, 1)] = KEY_MANY,		// Home Button
 	[KEYMAP_INDEX(1, 2)] = KEY_CLEAR,		// Hangup Button
 	[KEYMAP_INDEX(2, 0)] = KEY_SOFT1,		// Windows Button, mapped
 	[KEYMAP_INDEX(2, 1)] = KEY_SEND,		// Dial Button , mapped
@@ -89,6 +92,22 @@ void gpio_keypad_init(struct gpio_keypad_info *kpinfo)
 	}
 }
 
+HTCLEO_BUTTON_TYPE getKeyManyType(uint32_t outputGpio1, uint32_t inputGpio1, uint32_t outputGpio2, uint32_t inputGpio2){
+	//volume down 32,41 31,41
+//home 33,41, 32,41
+//dial 33,41 31,41
+
+	if ((outputGpio1 == 32 && inputGpio1 == 41) && (outputGpio2 == 31 && inputGpio2 == 41)){
+		return KEY_VOLUMEDOWN;
+	}else if ((outputGpio1 == 33 && inputGpio1 == 41) && (outputGpio2 == 32 && inputGpio2 == 41)){
+		return KEY_HOME;
+	} else if ((outputGpio1 == 33 && inputGpio1 == 41) && (outputGpio2 == 31 && inputGpio2 == 41)){
+		return KEY_SEND;
+	} else {
+		return KEY_DUMMY;
+	}
+}
+
 EFI_STATUS KeyPadDxeInitialize(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 
     DEBUG((EFI_D_ERROR, "KEYPADDXE START\n"));
@@ -97,7 +116,7 @@ EFI_STATUS KeyPadDxeInitialize(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemT
 	//gpio_keypad_init(&htcleo_keypad_info);
 	while (TRUE){
 		for (int i = 0; i < 3; i++){
-			//DEBUG((EFI_D_ERROR, "setting GPIO %d to %d\n", key_rowgpio[i], 1));
+			DEBUG((EFI_D_ERROR, "setting GPIO %d to %d\n", key_rowgpio[i], 1));
 			gpio_set(key_rowgpio[i], 1);
 				for (int j = 0; j < 3; j++){
 					int status = gpio_get(key_colgpio[j]);
@@ -106,17 +125,18 @@ EFI_STATUS KeyPadDxeInitialize(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemT
 						HTCLEO_BUTTON_TYPE button = htcleo_keymap[KEYMAP_INDEX(i,j)];
 						//DEBUG((EFI_D_ERROR, "button pressed is %s\n", button));
 
-						if (button == KEY_HOME){
-							DEBUG((EFI_D_ERROR, "button pressed, i: %d, j: %d\n", i, j));
+						if (button == KEY_MANY){
+							// ich wollte sowas machen wie mir die gpios von den buttons merken wenn status 0 und das dann aber auch wieder reseten nicht vergessen (ich glaube das muss in die while loop rein bin aber nicht ganz sicher)
+							// button = getgetKeyManyType(1,1,1,1)
 						}
-					}else {
-					//DEBUG((EFI_D_ERROR, "GPIO %d is %d\n", key_colgpio[j], status));
 					}
+					DEBUG((EFI_D_ERROR, "GPIO %d is %d\n", key_colgpio[j], status));
 				}
 			gpio_set(key_rowgpio[i], 0);
+			DEBUG((EFI_D_ERROR, "\n"));
+			mdelay(2000);
 
 		}
-		mdelay(3000);
 	}
     
 
