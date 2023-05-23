@@ -90,11 +90,18 @@ EFI_STATUS KeyPadDxeInitialize(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemT
 	gpio_keypad_init(&htcleo_keypad_info);
 
 	while (TRUE){
+		//handle power key first
+
+				int powerKeyStatus = gpio_get(HTCLEO_POWER_KP_GPIO);
+					if (powerKeyStatus == 0){
+						//power key is a seperate GPIO 
+						DEBUG((EFI_D_ERROR, "power key pressed\n"));
+					}
+
 		for (int i = 0; i < 3; i++){
 			gpio_set(key_rowgpio[i], 0);
 				for (int j = 0; j < 3; j++){
 					int status = gpio_get(key_colgpio[j]);
-					int powerKeyStatus = gpio_get(HTCLEO_POWER_KP_GPIO);
 
 					if (status == 0){
 						HTCLEO_BUTTON_TYPE button = htcleo_keymap[KEYMAP_INDEX(i,j)];
@@ -128,11 +135,7 @@ EFI_STATUS KeyPadDxeInitialize(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemT
         break;
 }
 					}
-					
-					if (powerKeyStatus == 0){
-						//power key is a seperate GPIO 
-						DEBUG((EFI_D_ERROR, "power key pressed\n"));
-					}
+
 					
 				}
 			gpio_set(key_rowgpio[i], 1);
