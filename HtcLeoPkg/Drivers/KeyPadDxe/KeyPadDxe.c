@@ -98,27 +98,35 @@ EFI_STATUS KeyPadDxeInitialize(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemT
 
 					if (status == 0){
 						HTCLEO_BUTTON_TYPE button = htcleo_keymap[KEYMAP_INDEX(i,j)];
-						if (button == KEY_SOFT1){
-							//windows key
-							DEBUG((EFI_D_ERROR, "windows key pressed\n"));
-						}else if (button == KEY_SEND){
-							//dial key
-							DEBUG((EFI_D_ERROR, "dial key pressed\n"));
-						}else if (button == KEY_BACK){
-							//back key
-							DEBUG((EFI_D_ERROR, "back key pressed\n"));
-						}else if (button == KEY_HOME){
-							//home key
-							DEBUG((EFI_D_ERROR, "home key pressed\n"));
-						}else if (button == KEY_VOLUMEDOWN){
-							//volume down
-							DEBUG((EFI_D_ERROR, "volume down key pressed\n"));
-						}else if (button == KEY_VOLUMEUP){
-							//volme up
-							DEBUG((EFI_D_ERROR, "volume up key pressed\n"));
-						}else if (button == KEY_DUMMY){
-							DEBUG((EFI_D_ERROR, "dummy\n"));	
-						}
+	switch (button) {
+    case KEY_SOFT1:
+        // Windows key
+        DEBUG((EFI_D_ERROR, "windows key pressed\n"));
+        break;
+    case KEY_SEND:
+        // Dial key
+        DEBUG((EFI_D_ERROR, "dial key pressed\n"));
+        break;
+    case KEY_BACK:
+        // Back key
+        DEBUG((EFI_D_ERROR, "back key pressed\n"));
+        break;
+    case KEY_HOME:
+        // Home key
+        DEBUG((EFI_D_ERROR, "home key pressed\n"));
+        break;
+    case KEY_VOLUMEDOWN:
+        // Volume down
+        DEBUG((EFI_D_ERROR, "volume down key pressed\n"));
+        break;
+    case KEY_VOLUMEUP:
+        // Volume up
+        DEBUG((EFI_D_ERROR, "volume up key pressed\n"));
+        break;
+    default:
+        // Handle any other cases
+        break;
+}
 					}
 					
 					if (powerKeyStatus == 0){

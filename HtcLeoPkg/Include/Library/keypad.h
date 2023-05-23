@@ -14,8 +14,6 @@ typedef enum {
   KEY_CLEAR,
   KEY_BACK,
   KEY_HOME,
-  KEY_DUMMY,
-  KEY_MANY,
 } HTCLEO_BUTTON_TYPE;
 
 typedef unsigned long time_t;
