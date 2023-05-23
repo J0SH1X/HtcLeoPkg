@@ -11,6 +11,8 @@
 #define HTCLEO_GPIO_KP_MPIN1     		41
 #define HTCLEO_GPIO_KP_MPIN2     		40
 
+#define HTCLEO_POWER_KP_GPIO			94
+
 #define GPIO_INPUT	0x0000
 #define GPIO_OUTPUT	0x0001
 #define GPIO_PULLUP	0x0100
@@ -38,19 +40,14 @@ static uint32_t key_colgpio[] = {
 
 #define KEYMAP_INDEX(row, col) ((row)*3 + (col))
 static HTCLEO_BUTTON_TYPE htcleo_keymap[3 * 3] = {
-	[KEYMAP_INDEX(0, 0)] = KEY_BACK,		//  Back Button again, mapped
+	[KEYMAP_INDEX(0, 0)] = KEY_VOLUMEUP,	//  Volume up
 	[KEYMAP_INDEX(0, 1)] = KEY_VOLUMEDOWN,	// Volume Down
-	[KEYMAP_INDEX(1, 0)] = KEY_BACK,		// Back Button, mapped
-	[KEYMAP_INDEX(1, 1)] = KEY_MANY,		// Home Button
+	[KEYMAP_INDEX(1, 0)] = KEY_SOFT1,		// Windows Button, mapped
+	[KEYMAP_INDEX(1, 1)] = KEY_SEND,		// Dial Button
 	[KEYMAP_INDEX(1, 2)] = KEY_CLEAR,		// Hangup Button
-	[KEYMAP_INDEX(2, 0)] = KEY_SOFT1,		// Windows Button, mapped
-	[KEYMAP_INDEX(2, 1)] = KEY_SEND,		// Dial Button , mapped
+	[KEYMAP_INDEX(2, 0)] = KEY_BACK,		// Back Button
+	[KEYMAP_INDEX(2, 1)] = KEY_HOME,		// Home Button, mapped
 };
-
-// HTCLEO_BUTTON_TYPE leoKeys[9] = {
-// 	KEY_BACK,
-// 	K
-// }
 
 void htcleo_handle_key_bkl(){
 	//handle button backlight here
@@ -59,18 +56,14 @@ static struct gpio_keypad_info htcleo_keypad_info = {
 	.keymap        	= htcleo_keymap,
 	.output_gpios  	= key_rowgpio,
 	.input_gpios   	= key_colgpio,
-	.noutputs      	= ASZ(key_rowgpio),
-	.ninputs      	= ASZ(key_colgpio),
+	.noutputs      	= 3,
+	.ninputs      	= 3,
 	.settle_time   	= 40,
 	.poll_time     	= 20,
 	.flags        	= GPIOKPF_DRIVE_INACTIVE,
 	.notify_fn     	= &htcleo_handle_key_bkl,
 };
 #undef ASZ
-
-EFI_EVENT TimerEvent;
-EFI_TIMER_ARCH_PROTOCOL *TimerProtocol;
-
 
 void gpio_keypad_init(struct gpio_keypad_info *kpinfo)
 { 
@@ -82,9 +75,7 @@ void gpio_keypad_init(struct gpio_keypad_info *kpinfo)
 	output_cfg = kpinfo->flags & GPIOKPF_DRIVE_INACTIVE ? GPIO_OUTPUT : 0;
 
 	for (i = 0; i < kpinfo->noutputs; i++) {
-		DEBUG((EFI_D_ERROR, "Setting GPIO %d to %d\n",kpinfo->output_gpios[i], output_val ));
 		gpio_set(kpinfo->output_gpios[i], output_val);
-		DEBUG((EFI_D_ERROR, "Config GPIO %d to %d\n",kpinfo->output_gpios[i], output_cfg ));
 		gpio_config(kpinfo->output_gpios[i], output_cfg);
 	}
 	for (i = 0; i < kpinfo->ninputs; i++) {
@@ -92,49 +83,53 @@ void gpio_keypad_init(struct gpio_keypad_info *kpinfo)
 	}
 }
 
-HTCLEO_BUTTON_TYPE getKeyManyType(uint32_t outputGpio1, uint32_t inputGpio1, uint32_t outputGpio2, uint32_t inputGpio2){
-	//volume down 32,41 31,41
-//home 33,41, 32,41
-//dial 33,41 31,41
-
-	if ((outputGpio1 == 32 && inputGpio1 == 41) && (outputGpio2 == 31 && inputGpio2 == 41)){
-		return KEY_VOLUMEDOWN;
-	}else if ((outputGpio1 == 33 && inputGpio1 == 41) && (outputGpio2 == 32 && inputGpio2 == 41)){
-		return KEY_HOME;
-	} else if ((outputGpio1 == 33 && inputGpio1 == 41) && (outputGpio2 == 31 && inputGpio2 == 41)){
-		return KEY_SEND;
-	} else {
-		return KEY_DUMMY;
-	}
-}
-
 EFI_STATUS KeyPadDxeInitialize(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable) {
 
     DEBUG((EFI_D_ERROR, "KEYPADDXE START\n"));
 
+	gpio_keypad_init(&htcleo_keypad_info);
 
-	//gpio_keypad_init(&htcleo_keypad_info);
 	while (TRUE){
 		for (int i = 0; i < 3; i++){
-			DEBUG((EFI_D_ERROR, "setting GPIO %d to %d\n", key_rowgpio[i], 1));
-			gpio_set(key_rowgpio[i], 1);
+			gpio_set(key_rowgpio[i], 0);
 				for (int j = 0; j < 3; j++){
 					int status = gpio_get(key_colgpio[j]);
+					int powerKeyStatus = gpio_get(HTCLEO_POWER_KP_GPIO);
 
 					if (status == 0){
 						HTCLEO_BUTTON_TYPE button = htcleo_keymap[KEYMAP_INDEX(i,j)];
-						//DEBUG((EFI_D_ERROR, "button pressed is %s\n", button));
-
-						if (button == KEY_MANY){
-							// ich wollte sowas machen wie mir die gpios von den buttons merken wenn status 0 und das dann aber auch wieder reseten nicht vergessen (ich glaube das muss in die while loop rein bin aber nicht ganz sicher)
-							// button = getgetKeyManyType(1,1,1,1)
+						if (button == KEY_SOFT1){
+							//windows key
+							DEBUG((EFI_D_ERROR, "windows key pressed\n"));
+						}else if (button == KEY_SEND){
+							//dial key
+							DEBUG((EFI_D_ERROR, "dial key pressed\n"));
+						}else if (button == KEY_BACK){
+							//back key
+							DEBUG((EFI_D_ERROR, "back key pressed\n"));
+						}else if (button == KEY_HOME){
+							//home key
+							DEBUG((EFI_D_ERROR, "home key pressed\n"));
+						}else if (button == KEY_VOLUMEDOWN){
+							//volume down
+							DEBUG((EFI_D_ERROR, "volume down key pressed\n"));
+						}else if (button == KEY_VOLUMEUP){
+							//volme up
+							DEBUG((EFI_D_ERROR, "volume up key pressed\n"));
+						}else if (button == KEY_DUMMY){
+							DEBUG((EFI_D_ERROR, "dummy\n"));	
 						}
 					}
-					DEBUG((EFI_D_ERROR, "GPIO %d is %d\n", key_colgpio[j], status));
+					
+					if (powerKeyStatus == 0){
+						//power key is a seperate GPIO 
+						DEBUG((EFI_D_ERROR, "power key pressed\n"));
+					}
+					
 				}
-			gpio_set(key_rowgpio[i], 0);
-			DEBUG((EFI_D_ERROR, "\n"));
-			mdelay(2000);
+			gpio_set(key_rowgpio[i], 1);
+			mdelay(100);
+			//DEBUG((EFI_D_ERROR, "\n"));
 
 		}
 	}
