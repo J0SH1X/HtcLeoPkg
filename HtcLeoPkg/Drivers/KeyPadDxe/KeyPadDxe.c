@@ -13,6 +13,8 @@
 
 #define HTCLEO_POWER_KP_GPIO			94
 
+#define HTCLEO_GPIO_KP_LED	 			48
+
 #define GPIO_INPUT	0x0000
 #define GPIO_OUTPUT	0x0001
 #define GPIO_PULLUP	0x0100
@@ -49,8 +51,13 @@ static HTCLEO_BUTTON_TYPE htcleo_keymap[3 * 3] = {
 	[KEYMAP_INDEX(2, 1)] = KEY_HOME,		// Home Button, mapped
 };
 
-void htcleo_handle_key_bkl(){
+static VOID htcleo_handle_key_bkl(HTCLEO_BUTTON_TYPE button){
 	//handle button backlight here
+	if (button != KEY_VOLUMEDOWN && button != KEY_VOLUMEUP){ 
+	gpio_set(HTCLEO_GPIO_KP_LED,1);
+	mdelay(500);
+	gpio_set(HTCLEO_GPIO_KP_LED,0);
+	}
 }
 static struct gpio_keypad_info htcleo_keypad_info = {
 	.keymap        	= htcleo_keymap,
@@ -61,7 +68,7 @@ static struct gpio_keypad_info htcleo_keypad_info = {
 	.settle_time   	= 40,
 	.poll_time     	= 20,
 	.flags        	= GPIOKPF_DRIVE_INACTIVE,
-	.notify_fn     	= &htcleo_handle_key_bkl,
+	//.notify_fn     	= &htcleo_handle_key_bkl,
 };
 #undef ASZ
 
@@ -94,7 +101,8 @@ EFI_STATUS KeyPadDxeInitialize(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemT
 
 				int powerKeyStatus = gpio_get(HTCLEO_POWER_KP_GPIO);
 					if (powerKeyStatus == 0){
-						//power key is a seperate GPIO 
+						//power key is a seperate GPIO
+						htcleo_handle_key_bkl(KEY_CLEAR);
 						DEBUG((EFI_D_ERROR, "power key pressed\n"));
 					}
 
@@ -105,6 +113,7 @@ EFI_STATUS KeyPadDxeInitialize(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemT
 
 					if (status == 0){
 						HTCLEO_BUTTON_TYPE button = htcleo_keymap[KEYMAP_INDEX(i,j)];
+						htcleo_handle_key_bkl(button);
 	switch (button) {
     case KEY_SOFT1:
         // Windows key

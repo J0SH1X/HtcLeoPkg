@@ -33,7 +33,7 @@ struct gpio_keypad_info {
 	 * Can be used by board to be notified without using extra resources
 	 * Used for key backlight, power off etc..
 	 */
-	void (*notify_fn)(unsigned key_code, unsigned state);
+	//void (*notify_fn)(unsigned key_code, unsigned state);
 };
 
 #endif
