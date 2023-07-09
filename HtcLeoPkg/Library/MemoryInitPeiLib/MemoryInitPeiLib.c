@@ -43,9 +43,12 @@ InitMmu(
 	UINTN                         TranslationTableSize;
 	RETURN_STATUS                 Status;
 
-	//Note: Because we called PeiServicesInstallPeiMemory() before to call InitMmu() the MMU Page Table resides in
-	//      DRAM (even at the top of DRAM as it is the first permanent memory allocation)
+	// Note: Because we called PeiServicesInstallPeiMemory() before
+    // to call InitMmu() the MMU Page Table resides in
+    // RAM (even at the top of DRAM as it is the first permanent memory
+    // allocation)
 	Status = ArmConfigureMmu(MemoryTable, &TranslationTableBase, &TranslationTableSize);
+
 	if (EFI_ERROR(Status)) {
 		DEBUG((EFI_D_ERROR, "Error: Failed to enable MMU\n"));
 	}
@@ -65,11 +68,11 @@ AddHob
 		Desc->Length
 	);
 
-	BuildMemoryAllocationHob(
-		Desc->Address,
-		Desc->Length,
-		Desc->MemoryType
-	);
+	if (Desc->ResourceType == EFI_RESOURCE_SYSTEM_MEMORY ||
+      Desc->MemoryType == EfiRuntimeServicesData)
+  	{
+    	BuildMemoryAllocationHob(Desc->Address, Desc->Length, Desc->MemoryType);
+  	}
 }
 
 /*++
@@ -109,11 +112,17 @@ MemoryPeim(
 		{
 		case AddMem:
 		case AddDev:
+		case HobOnlyNoCacheSetting:
 			AddHob(MemoryDescriptorEx);
 			break;
 		case NoHob:
 		default:
 			goto update;
+		}
+
+		if (MemoryDescriptorEx->HobOption == HobOnlyNoCacheSetting) {
+			MemoryDescriptorEx++;
+			continue;
 		}
 
 	update:

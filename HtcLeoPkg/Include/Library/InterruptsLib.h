@@ -45,7 +45,4 @@ INTN mask_interrupt(UINTN vector);
 INTN unmask_interrupt(UINTN vector);
 VOID register_int_handler(UINTN vector, int_handler handler, VOID *arg);
 
-VOID platform_init_interrupts(VOID);
-VOID platform_deinit_interrupts(VOID);
-
 #endif

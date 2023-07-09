@@ -107,8 +107,8 @@ GetTimeInNanoSecond (
   IN      UINT64  Ticks
   )
 {
-  UINT64  NanoSeconds = 0;
-  return NanoSeconds;
+  //UINT64  NanoSeconds = 0;
+  return Ticks;
 }
 
 UINT64

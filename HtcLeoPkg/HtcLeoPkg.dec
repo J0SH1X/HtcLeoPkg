@@ -43,5 +43,8 @@
   gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferVisibleWidth|480|UINT32|0x0000a404
   gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferVisibleHeight|800|UINT32|0x0000a405
 
-  # RTC information
-   gHtcLeoPkgTokenSpaceGuid.PcdBootShimInfo1|0xb0000000|UINT64|0x00000a601
+  # Timer
+  gHtcLeoPkgTokenSpaceGuid.PcdTimerFreqInHz|4800000|UINT32|0x0000a406
+
+  # Interrupt Controller
+  gArmTokenSpaceGuid.PcdVicBase|0xAC000000|UINT32|0x0000a407
