@@ -24,10 +24,10 @@ typedef struct {
   UINT8   Gpio;
   BOOLEAN ActiveLow;
 
-  //gpio keymatrix
+  // gpio keymatrix
 
-  UINT8   GpioIn;
-  UINT8   GpioOut;
+  UINT8 GpioIn;
+  UINT8 GpioOut;
 
   // pon
   UINT32 PonType;
@@ -36,10 +36,10 @@ typedef struct {
 STATIC KEY_CONTEXT_PRIVATE KeyContextPower;
 STATIC KEY_CONTEXT_PRIVATE KeyContextVolumeUp;
 STATIC KEY_CONTEXT_PRIVATE KeyContextVolumeDown;
-//STATIC KEY_CONTEXT_PRIVATE KeyContextCamera;
+// STATIC KEY_CONTEXT_PRIVATE KeyContextCamera;
 
-STATIC KEY_CONTEXT_PRIVATE *KeyList[] = {&KeyContextPower, &KeyContextVolumeUp,
-                                         &KeyContextVolumeDown};
+STATIC KEY_CONTEXT_PRIVATE *KeyList[] = {
+    &KeyContextPower, &KeyContextVolumeUp, &KeyContextVolumeDown};
 
 STATIC
 VOID KeypadInitializeKeyContextPrivate(KEY_CONTEXT_PRIVATE *Context)
@@ -81,32 +81,31 @@ KeypadDeviceImplConstructor(VOID)
 
   // Vol Up (115) , Camera Splash (766) and Camera Focus (528)
   // go through PMIC GPIO
-  //volume up
+  // volume up
   // StaticContext             = KeypadKeyCodeToKeyContext(115);
   // StaticContext->DeviceType = KEY_DEVICE_TYPE_LEGACY;
   // StaticContext->Gpio       = 3;
   // StaticContext->ActiveLow  = 0x1 & 0x1;
   // StaticContext->IsValid    = TRUE;
 
-
-//camera, (is not needed here)
-  // StaticContext             = KeypadKeyCodeToKeyContext(766);
-  // StaticContext->DeviceType = KEY_DEVICE_TYPE_PM8X41;
-  // StaticContext->Gpio       = 4;
-  // StaticContext->ActiveLow  = 0x1 & 0x1;
-  // StaticContext->IsValid    = TRUE;
+  // camera, (is not needed here)
+  //  StaticContext             = KeypadKeyCodeToKeyContext(766);
+  //  StaticContext->DeviceType = KEY_DEVICE_TYPE_PM8X41;
+  //  StaticContext->Gpio       = 4;
+  //  StaticContext->ActiveLow  = 0x1 & 0x1;
+  //  StaticContext->IsValid    = TRUE;
 
   // Vol Down (114) and Power On (116) on through PMIC PON
 
-//power button
+  // power button
 
   StaticContext             = KeypadKeyCodeToKeyContext(116);
   StaticContext->DeviceType = KEY_DEVICE_TYPE_LEGACY;
   StaticContext->Gpio       = 94;
   StaticContext->ActiveLow  = 0x1 & 0x1;
   StaticContext->IsValid    = TRUE;
-  
-  //back button
+
+  // back button
   StaticContext             = KeypadKeyCodeToKeyContext(116);
   StaticContext->DeviceType = KEY_DEVICE_TYPE_KEYMATRIX;
   StaticContext->GpioOut    = 33;
@@ -114,13 +113,12 @@ KeypadDeviceImplConstructor(VOID)
   StaticContext->ActiveLow  = 0x1 & 0x1;
   StaticContext->IsValid    = TRUE;
 
-    //back button
+  // back button
   StaticContext             = KeypadKeyCodeToKeyContext(116);
   StaticContext->DeviceType = KEY_DEVICE_TYPE_LEGACY;
   StaticContext->Gpio       = 94;
   StaticContext->ActiveLow  = 0x1 & 0x1;
   StaticContext->IsValid    = TRUE;
-
 
   return RETURN_SUCCESS;
 }
@@ -139,13 +137,13 @@ EFI_STATUS EFIAPI KeypadDeviceImplReset(KEYPAD_DEVICE_PROTOCOL *This)
   // LibKeyInitializeKeyContext(&KeyContextCamera.EfiKeyContext);
   // KeyContextCamera.EfiKeyContext.KeyData.Key.ScanCode = SCAN_ESC;
 
-  //impliment the new scancodes as you wish here
+  // impliment the new scancodes as you wish here
 
   return EFI_SUCCESS;
 }
 
 extern void gpio_set(unsigned n, unsigned on);
-extern int gpio_get(unsigned n);
+extern int  gpio_get(unsigned n);
 
 EFI_STATUS KeypadDeviceImplGetKeys(
     KEYPAD_DEVICE_PROTOCOL *This, KEYPAD_RETURN_API *KeypadReturnApi,
@@ -157,9 +155,6 @@ EFI_STATUS KeypadDeviceImplGetKeys(
   UINTN   Index;
   DEBUG((EFI_D_ERROR, "KeypadDeviceImplGetKeys!\n"));
 
-	
-
-
   for (Index = 0; Index < ARRAY_SIZE(KeyList); Index++) {
     KEY_CONTEXT_PRIVATE *Context = KeyList[Index];
 
@@ -169,35 +164,38 @@ EFI_STATUS KeypadDeviceImplGetKeys(
 
     // get status
     if (Context->DeviceType == KEY_DEVICE_TYPE_TLMM) {
-     // GpioStatus = gGpioTlmm->Get(Context->Gpio);
-      RC         = 0;
+      // GpioStatus = gGpioTlmm->Get(Context->Gpio);
+      RC = 0;
     }
     else if (Context->DeviceType == KEY_DEVICE_TYPE_PM8X41) {
-      //RC = gPm8x41->pm8x41_gpio_get(Context->Gpio, &GpioStatus);
+      // RC = gPm8x41->pm8x41_gpio_get(Context->Gpio, &GpioStatus);
     }
     else if (Context->DeviceType == KEY_DEVICE_TYPE_PM8X41_PON) {
-      if (Context->PonType == 0x1){
-      //  GpioStatus = gPm8x41->pm8x41_resin_status();
-      }else if (Context->PonType == 0x0){
-      //  GpioStatus = gPm8x41->pm8x41_get_pwrkey_is_pressed();
-      }else
+      if (Context->PonType == 0x1) {
+        //  GpioStatus = gPm8x41->pm8x41_resin_status();
+      }
+      else if (Context->PonType == 0x0) {
+        //  GpioStatus = gPm8x41->pm8x41_get_pwrkey_is_pressed();
+      }
+      else
         continue;
 
       RC = 0;
-    }else if (Context->DeviceType == KEY_DEVICE_TYPE_LEGACY){
-      //impliement hd2 gpio shit here
+    }
+    else if (Context->DeviceType == KEY_DEVICE_TYPE_LEGACY) {
+      // impliement hd2 gpio shit here
       GpioStatus = gpio_get(Context->Gpio);
-            	DEBUG((EFI_D_ERROR, "LEGACY KEYTYPE GPIO STATUS: %d!\n", GpioStatus));
-       gpio_set(48,1);
+      DEBUG((EFI_D_ERROR, "LEGACY KEYTYPE GPIO STATUS: %d!\n", GpioStatus));
+      gpio_set(48, 1);
       // mdelay(1000);
       // gpio_set(48,0);
       RC = -1;
-
-    }else if (Context->DeviceType == KEY_DEVICE_TYPE_KEYMATRIX){
-      	//DEBUG((EFI_D_ERROR, "KEYMATRIX!\n"));
-      gpio_set(Context->GpioOut, 1);
+    }
+    else if (Context->DeviceType == KEY_DEVICE_TYPE_KEYMATRIX) {
+      // DEBUG((EFI_D_ERROR, "KEYMATRIX!\n"));
+      gpio_set(Context->GpioOut, 0);
       GpioStatus = gpio_get(Context->GpioIn);
-      RC = -1;
+      RC         = -1;
     }
     else {
       continue;
@@ -206,10 +204,10 @@ EFI_STATUS KeypadDeviceImplGetKeys(
       continue;
 
     // update key status
-    //0000 ^0001 = 0001 = decimal 1
+    // 0000 ^0001 = 0001 = decimal 1
     IsPressed = (GpioStatus ? 1 : 0) ^ Context->ActiveLow;
 
-    if (Context->DeviceType == KEY_DEVICE_TYPE_KEYMATRIX){
+    if (Context->DeviceType == KEY_DEVICE_TYPE_KEYMATRIX) {
       gpio_set(Context->GpioOut, 0);
     }
 
