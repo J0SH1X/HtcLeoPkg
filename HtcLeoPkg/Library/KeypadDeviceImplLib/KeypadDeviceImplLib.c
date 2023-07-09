@@ -36,10 +36,15 @@ typedef struct {
 STATIC KEY_CONTEXT_PRIVATE KeyContextPower;
 STATIC KEY_CONTEXT_PRIVATE KeyContextVolumeUp;
 STATIC KEY_CONTEXT_PRIVATE KeyContextVolumeDown;
-// STATIC KEY_CONTEXT_PRIVATE KeyContextCamera;
+STATIC KEY_CONTEXT_PRIVATE KeyContextVolumeBack;
+STATIC KEY_CONTEXT_PRIVATE KeyContextVolumeWindows;
+STATIC KEY_CONTEXT_PRIVATE KeyContextVolumeHome;
+STATIC KEY_CONTEXT_PRIVATE KeyContextVolumeDial;
 
 STATIC KEY_CONTEXT_PRIVATE *KeyList[] = {
-    &KeyContextPower, &KeyContextVolumeUp, &KeyContextVolumeDown};
+    &KeyContextPower,      &KeyContextVolumeUp,      &KeyContextVolumeDown,
+    &KeyContextVolumeBack, &KeyContextVolumeWindows, &KeyContextVolumeHome,
+    &KeyContextVolumeDial};
 
 STATIC
 VOID KeypadInitializeKeyContextPrivate(KEY_CONTEXT_PRIVATE *Context)
@@ -59,8 +64,14 @@ KEY_CONTEXT_PRIVATE *KeypadKeyCodeToKeyContext(UINT32 KeyCode)
     return &KeyContextVolumeUp;
   else if (KeyCode == 116)
     return &KeyContextPower;
-  // else if (KeyCode == 766)
-  //   return &KeyContextCamera;
+  else if (KeyCode == 116)
+    return &KeyContextBack;
+  else if (KeyCode == 117)
+    return &KeyContextWindows;
+  else if (KeyCode == 118)
+    return &KeyContextHome;
+  else if (KeyCode == 119)
+    return &KeyContextDial;
   else
     return NULL;
 }
@@ -79,26 +90,7 @@ KeypadDeviceImplConstructor(VOID)
 
   // Configure keys
 
-  // Vol Up (115) , Camera Splash (766) and Camera Focus (528)
-  // go through PMIC GPIO
-  // volume up
-  // StaticContext             = KeypadKeyCodeToKeyContext(115);
-  // StaticContext->DeviceType = KEY_DEVICE_TYPE_LEGACY;
-  // StaticContext->Gpio       = 3;
-  // StaticContext->ActiveLow  = 0x1 & 0x1;
-  // StaticContext->IsValid    = TRUE;
-
-  // camera, (is not needed here)
-  //  StaticContext             = KeypadKeyCodeToKeyContext(766);
-  //  StaticContext->DeviceType = KEY_DEVICE_TYPE_PM8X41;
-  //  StaticContext->Gpio       = 4;
-  //  StaticContext->ActiveLow  = 0x1 & 0x1;
-  //  StaticContext->IsValid    = TRUE;
-
-  // Vol Down (114) and Power On (116) on through PMIC PON
-
   // power button
-
   StaticContext             = KeypadKeyCodeToKeyContext(116);
   StaticContext->DeviceType = KEY_DEVICE_TYPE_LEGACY;
   StaticContext->Gpio       = 94;
@@ -113,12 +105,12 @@ KeypadDeviceImplConstructor(VOID)
   StaticContext->ActiveLow  = 0x1 & 0x1;
   StaticContext->IsValid    = TRUE;
 
-  // back button
-  StaticContext             = KeypadKeyCodeToKeyContext(116);
-  StaticContext->DeviceType = KEY_DEVICE_TYPE_LEGACY;
-  StaticContext->Gpio       = 94;
-  StaticContext->ActiveLow  = 0x1 & 0x1;
-  StaticContext->IsValid    = TRUE;
+  // power button button again replace this with the rest of the keymap
+  // StaticContext             = KeypadKeyCodeToKeyContext(116);
+  // StaticContext->DeviceType = KEY_DEVICE_TYPE_LEGACY;
+  // StaticContext->Gpio       = 94;
+  // StaticContext->ActiveLow  = 0x1 & 0x1;
+  // StaticContext->IsValid    = TRUE;
 
   return RETURN_SUCCESS;
 }
@@ -134,10 +126,21 @@ EFI_STATUS EFIAPI KeypadDeviceImplReset(KEYPAD_DEVICE_PROTOCOL *This)
   LibKeyInitializeKeyContext(&KeyContextVolumeDown.EfiKeyContext);
   KeyContextVolumeDown.EfiKeyContext.KeyData.Key.ScanCode = SCAN_DOWN;
 
-  // LibKeyInitializeKeyContext(&KeyContextCamera.EfiKeyContext);
-  // KeyContextCamera.EfiKeyContext.KeyData.Key.ScanCode = SCAN_ESC;
+  // ToDo: replace with different keys that are returned
 
-  // impliment the new scancodes as you wish here
+  LibKeyInitializeKeyContext(&KeyContextBack.EfiKeyContext);
+  KeyContextBack.EfiKeyContext.KeyData.Key.ScanCode = SCAN_DOWN;
+
+  LibKeyInitializeKeyContext(&KeyContextWindows.EfiKeyContext);
+  KeyContextWindows.EfiKeyContext.KeyData.Key.ScanCode = SCAN_DOWN;
+
+  LibKeyInitializeKeyContext(&KeyContextHome.EfiKeyContext);
+  KeyContextHome.EfiKeyContext.KeyData.Key.ScanCode = SCAN_DOWN;
+
+  LibKeyInitializeKeyContext(&KeyContextDial.EfiKeyContext);
+  KeyContextDial.EfiKeyContext.KeyData.Key.ScanCode = SCAN_DOWN;
+
+  // Todo: end
 
   return EFI_SUCCESS;
 }
@@ -187,12 +190,10 @@ EFI_STATUS KeypadDeviceImplGetKeys(
       GpioStatus = gpio_get(Context->Gpio);
       DEBUG((EFI_D_ERROR, "LEGACY KEYTYPE GPIO STATUS: %d!\n", GpioStatus));
       gpio_set(48, 1);
-      // mdelay(1000);
-      // gpio_set(48,0);
       RC = -1;
     }
     else if (Context->DeviceType == KEY_DEVICE_TYPE_KEYMATRIX) {
-      // DEBUG((EFI_D_ERROR, "KEYMATRIX!\n"));
+      DEBUG((EFI_D_ERROR, "KEYMATRIX!\n"));
       gpio_set(Context->GpioOut, 0);
       GpioStatus = gpio_get(Context->GpioIn);
       RC         = -1;
@@ -207,8 +208,13 @@ EFI_STATUS KeypadDeviceImplGetKeys(
     // 0000 ^0001 = 0001 = decimal 1
     IsPressed = (GpioStatus ? 1 : 0) ^ Context->ActiveLow;
 
+    if (IsPressed = 1) {
+      // impl a timed callback here that enables gpio 48 for a few secs and then
+      // the callback function should disable it again
+    }
+
     if (Context->DeviceType == KEY_DEVICE_TYPE_KEYMATRIX) {
-      gpio_set(Context->GpioOut, 0);
+      gpio_set(Context->GpioOut, 1);
     }
 
     LibKeyUpdateKeyStatus(
