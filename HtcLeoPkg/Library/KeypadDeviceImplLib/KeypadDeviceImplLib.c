@@ -36,15 +36,15 @@ typedef struct {
 STATIC KEY_CONTEXT_PRIVATE KeyContextPower;
 STATIC KEY_CONTEXT_PRIVATE KeyContextVolumeUp;
 STATIC KEY_CONTEXT_PRIVATE KeyContextVolumeDown;
-STATIC KEY_CONTEXT_PRIVATE KeyContextVolumeBack;
-STATIC KEY_CONTEXT_PRIVATE KeyContextVolumeWindows;
-STATIC KEY_CONTEXT_PRIVATE KeyContextVolumeHome;
-STATIC KEY_CONTEXT_PRIVATE KeyContextVolumeDial;
+STATIC KEY_CONTEXT_PRIVATE KeyContextBack;
+STATIC KEY_CONTEXT_PRIVATE KeyContextWindows;
+STATIC KEY_CONTEXT_PRIVATE KeyContextHome;
+STATIC KEY_CONTEXT_PRIVATE KeyContextDial;
 
 STATIC KEY_CONTEXT_PRIVATE *KeyList[] = {
     &KeyContextPower,      &KeyContextVolumeUp,      &KeyContextVolumeDown,
-    &KeyContextVolumeBack, &KeyContextVolumeWindows, &KeyContextVolumeHome,
-    &KeyContextVolumeDial};
+    &KeyContextBack, &KeyContextWindows, &KeyContextHome,
+    &KeyContextDial};
 
 STATIC
 VOID KeypadInitializeKeyContextPrivate(KEY_CONTEXT_PRIVATE *Context)
