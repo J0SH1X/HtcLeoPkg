@@ -1,0 +1,31 @@
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = HtcLeoVibrationLib
+  FILE_GUID                      = 70414a90-49e6-4c22-b128-af2964460a31
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = HtcLeoVibrationLib
+ # VALID_ARCHITECTURES            = ARM
+
+[BuildOptions.ARM]
+  GCC:*_*_*_CC_FLAGS = -Werror -Wno-unused-function -Wno-unused-variable -Wno-shift-count-overflow -Wno-incompatible-pointer-types
+[Sources.common]
+  HtcLeoVibrationLib.c
+
+[LibraryClasses]
+  DebugLib
+  IoLib
+  TimerLib
+  ArmLib
+  MsmTargetGpioLib
+  
+
+[Packages]
+  ArmPkg/ArmPkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec
+  MdePkg/MdePkg.dec
+  HtcLeoPkg/HtcLeoPkg.dec
+  
+[FixedPcd]
+

@@ -1,5 +1,5 @@
 [FD.QSD8250_UEFI]
-BaseAddress   = 0x11808000|gArmTokenSpaceGuid.PcdFdBaseAddress  # The base address of the Firmware in NOR Flash.
+BaseAddress   = 0x2C000000|gArmTokenSpaceGuid.PcdFdBaseAddress  # The base address of the Firmware in NOR Flash.
 Size          = 0x00200000|gArmTokenSpaceGuid.PcdFdSize         # The size in bytes of the FLASH Device
 ErasePolarity = 1
 
@@ -54,13 +54,15 @@ APRIORI DXE {
   # PI DXE Drivers producing Architectural Protocols (EFI Services)
   #
   INF MdeModulePkg/Universal/PCD/Dxe/Pcd.inf
+
+  INF ArmPkg/Drivers/CpuDxe/CpuDxe.inf
+  INF HtcLeoPkg/Drivers/InterruptDxe/InterruptDxe.inf
+  INF HtcLeoPkg/Drivers/TimerDxe/TimerDxe.inf
+
   INF MdeModulePkg/Core/Dxe/DxeMain.inf
   INF MdeModulePkg/Universal/ReportStatusCodeRouter/RuntimeDxe/ReportStatusCodeRouterRuntimeDxe.inf
   INF MdeModulePkg/Universal/StatusCodeHandler/RuntimeDxe/StatusCodeHandlerRuntimeDxe.inf
   INF MdeModulePkg/Core/RuntimeDxe/RuntimeDxe.inf
-  INF ArmPkg/Drivers/CpuDxe/CpuDxe.inf
-  # INF ArmPkg/Drivers/ArmGic/ArmGicDxe.inf
-  # INF ArmPkg/Drivers/TimerDxe/TimerDxe.inf
   INF MdeModulePkg/Universal/WatchdogTimerDxe/WatchdogTimer.inf
   INF MdeModulePkg/Universal/SecurityStubDxe/SecurityStubDxe.inf
   INF EmbeddedPkg/MetronomeDxe/MetronomeDxe.inf
@@ -76,7 +78,7 @@ APRIORI DXE {
 
   INF EmbeddedPkg/EmbeddedMonotonicCounter/EmbeddedMonotonicCounter.inf
   INF MdeModulePkg/Universal/ResetSystemRuntimeDxe/ResetSystemRuntimeDxe.inf
-  #INF EmbeddedPkg/RealTimeClockRuntimeDxe/RealTimeClockRuntimeDxe.inf
+  INF EmbeddedPkg/RealTimeClockRuntimeDxe/RealTimeClockRuntimeDxe.inf
   INF MdeModulePkg/Universal/DevicePathDxe/DevicePathDxe.inf
   INF MdeModulePkg/Universal/CapsuleRuntimeDxe/CapsuleRuntimeDxe.inf
   INF MdeModulePkg/Universal/HiiDatabaseDxe/HiiDatabaseDxe.inf
@@ -102,7 +104,7 @@ APRIORI DXE {
   INF MdeModulePkg/Universal/CapsuleRuntimeDxe/CapsuleRuntimeDxe.inf
   INF EmbeddedPkg/EmbeddedMonotonicCounter/EmbeddedMonotonicCounter.inf
   INF MdeModulePkg/Universal/ResetSystemRuntimeDxe/ResetSystemRuntimeDxe.inf
-  #INF EmbeddedPkg/RealTimeClockRuntimeDxe/RealTimeClockRuntimeDxe.inf
+  INF EmbeddedPkg/RealTimeClockRuntimeDxe/RealTimeClockRuntimeDxe.inf
   INF EmbeddedPkg/MetronomeDxe/MetronomeDxe.inf
 
   #
@@ -113,12 +115,16 @@ APRIORI DXE {
   INF HtcLeoPkg/Drivers/GraphicsConsoleDxe/GraphicsConsoleDxe.inf
   INF MdeModulePkg/Universal/Console/TerminalDxe/TerminalDxe.inf
 
-  # INF ArmPkg/Drivers/ArmGic/ArmGicDxe.inf
-  # INF ArmPkg/Drivers/TimerDxe/TimerDxe.inf
+  INF HtcLeoPkg/Drivers/InterruptDxe/InterruptDxe.inf
+  INF HtcLeoPkg/Drivers/TimerDxe/TimerDxe.inf
 
   INF MdeModulePkg/Universal/WatchdogTimerDxe/WatchdogTimer.inf
+  INF HtcLeoPkg/Drivers/HeartbeatDxe/HeartbeatDxe.inf
 
-
+  # SoC Drivers
+  INF HtcLeoPkg/Drivers/ClockDxe/ClockDxe.inf
+  INF HtcLeoPkg/Drivers/GpioDxe/GpioDxe.inf
+  INF HtcLeoPkg/Drivers/SdccDxe/SdccDxe.inf
 
   #
   # Virtual Keyboard

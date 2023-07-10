@@ -40,4 +40,4 @@
   PcdLib
 
 [FixedPcd]
-  gHtcLeoPkgTokenSpaceGuid.PcdBootShimInfo1
+  gHtcLeoPkgTokenSpaceGuid.PcdTimerFreqInHz

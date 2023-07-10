@@ -54,7 +54,7 @@
   BootLogoLib|MdeModulePkg/Library/BootLogoLib/BootLogoLib.inf
 
   SerialPortLib|HtcLeoPkg/Library/InMemorySerialPortLib/InMemorySerialPortLib.inf
-  #RealTimeClockLib|EmbeddedPkg/Library/VirtualRealTimeClockLib/VirtualRealTimeClockLib.inf
+  RealTimeClockLib|HtcLeoPkg/Library/VirtualRealTimeClockLib/VirtualRealTimeClockLib.inf
   TimeBaseLib|EmbeddedPkg/Library/TimeBaseLib/TimeBaseLib.inf
 
   # USB Requirements
@@ -79,6 +79,16 @@
   MemoryInitPeiLib|HtcLeoPkg/Library/MemoryInitPeiLib/PeiMemoryAllocationLib.inf
   CompilerIntrinsicsLib|ArmPkg/Library/CompilerIntrinsicsLib/CompilerIntrinsicsLib.inf
 
+  # Little kernel libraries
+  AdmLib|HtcLeoPkg/Library/AdmLib/AdmLib.inf
+  MsmPcomLib|HtcLeoPkg/Library/MsmPcomLib/MsmPcomLib.inf
+  MsmPcomClientLib|HtcLeoPkg/Library/MsmPcomClientLib/MsmPcomClientLib.inf
+
+  # SoC Drivers libraries
+  MsmTargetClockLib|HtcLeoPkg/Library/MsmTargetClockLib/MsmTargetClockLib.inf
+  MsmTargetGpioLib|HtcLeoPkg/Library/MsmTargetGpioLib/MsmTargetGpioLib.inf
+  HtcLeoVibrationLib|HtcLeoPkg/Library/HtcLeoVibrationLib/HtcLeoVibrationLib.inf
+
 [LibraryClasses.common.SEC]
   PrePiLib|EmbeddedPkg/Library/PrePiLib/PrePiLib.inf
   PrePiHobListPointerLib|ArmPlatformPkg/Library/PrePiHobListPointerLib/PrePiHobListPointerLib.inf
@@ -86,7 +96,7 @@
   ExtractGuidedSectionLib|EmbeddedPkg/Library/PrePiExtractGuidedSectionLib/PrePiExtractGuidedSectionLib.inf
   HobLib|EmbeddedPkg/Library/PrePiHobLib/PrePiHobLib.inf
   MemoryAllocationLib|EmbeddedPkg/Library/PrePiMemoryAllocationLib/PrePiMemoryAllocationLib.inf
-  MemoryInitPeiLib|ArmPlatformPkg/MemoryInitPei/MemoryInitPeiLib.inf
+  MemoryInitPeiLib|HtcLeoPkg/Library/MemoryInitPeiLib/PeiMemoryAllocationLib.inf
   PlatformPeiLib|HtcLeoPkg/Library/PlatformPeiLib/PlatformPeiLib.inf
   PrePiHobListPointerLib|ArmPlatformPkg/Library/PrePiHobListPointerLib/PrePiHobListPointerLib.inf
 
@@ -122,13 +132,9 @@
   #
 
   #
-  # ARM General Interrupt Controller
+  # ARM Vectored Interrupt Controller
   #
-  gArmTokenSpaceGuid.PcdGicDistributorBase|0x0b000000
-  gArmTokenSpaceGuid.PcdGicRedistributorsBase|0x0b002000
-
-  gArmTokenSpaceGuid.PcdArmArchTimerIntrNum|0x12
-  gArmTokenSpaceGuid.PcdArmArchTimerVirtIntrNum|0x13
+  gArmTokenSpaceGuid.PcdVicBase|0xAC000000
 
   # GUID of the UI app
   gEfiMdeModulePkgTokenSpaceGuid.PcdBootManagerMenuFile|{ 0x21, 0xaa, 0x2c, 0x46, 0x14, 0x76, 0x03, 0x45, 0x83, 0x6e, 0x8a, 0xb6, 0xf4, 0x66, 0x23, 0x31 }
@@ -154,7 +160,15 @@
   gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferWidth|480
   gHtcLeoPkgTokenSpaceGuid.PcdMipiFrameBufferHeight|800
 
-  gEfiMdeModulePkgTokenSpaceGuid.PcdAcpiExposedTableVersions|0x20
+[PcdsDynamicDefault.common]
+  gEfiMdeModulePkgTokenSpaceGuid.PcdVideoHorizontalResolution|480
+  gEfiMdeModulePkgTokenSpaceGuid.PcdVideoVerticalResolution|800
+  gEfiMdeModulePkgTokenSpaceGuid.PcdSetupVideoHorizontalResolution|480
+  gEfiMdeModulePkgTokenSpaceGuid.PcdSetupVideoVerticalResolution|800
+  gEfiMdeModulePkgTokenSpaceGuid.PcdSetupConOutRow|42
+  gEfiMdeModulePkgTokenSpaceGuid.PcdSetupConOutColumn|60  #HorizontalResolution / 8
+  gEfiMdeModulePkgTokenSpaceGuid.PcdConOutRow|42          # VerticalResolution / 19
+  gEfiMdeModulePkgTokenSpaceGuid.PcdConOutColumn|60
 
 ################################################################################
 #
@@ -185,8 +199,9 @@
   MdeModulePkg/Universal/CapsuleRuntimeDxe/CapsuleRuntimeDxe.inf
   EmbeddedPkg/EmbeddedMonotonicCounter/EmbeddedMonotonicCounter.inf
   MdeModulePkg/Universal/ResetSystemRuntimeDxe/ResetSystemRuntimeDxe.inf
-  #EmbeddedPkg/RealTimeClockRuntimeDxe/RealTimeClockRuntimeDxe.inf
+  EmbeddedPkg/RealTimeClockRuntimeDxe/RealTimeClockRuntimeDxe.inf
   EmbeddedPkg/MetronomeDxe/MetronomeDxe.inf
+  HtcLeoPkg/Drivers/HeartbeatDxe/HeartbeatDxe.inf
 
   MdeModulePkg/Universal/Console/ConPlatformDxe/ConPlatformDxe.inf
   HtcLeoPkg/Drivers/ConSplitterDxe/ConSplitterDxe.inf
@@ -196,24 +211,25 @@
 
   MdeModulePkg/Universal/Variable/RuntimeDxe/VariableRuntimeDxe.inf
 
-  # ArmPkg/Drivers/ArmGic/ArmGicDxe.inf
-  # ArmPkg/Drivers/TimerDxe/TimerDxe.inf
+  HtcLeoPkg/Drivers/InterruptDxe/InterruptDxe.inf
+  HtcLeoPkg/Drivers/TimerDxe/TimerDxe.inf
 
   MdeModulePkg/Universal/WatchdogTimerDxe/WatchdogTimer.inf
 
   MdeModulePkg/Universal/PCD/Dxe/Pcd.inf
 
-  #EmbeddedPkg/RealTimeClockRuntimeDxe/RealTimeClockRuntimeDxe.inf {
-  #  <LibraryClasses>
-	#  RealTimeClockLib|HtcLeoPkg/Library/VirtualRealTimeClockLib/VirtualRealTimeClockLib.inf
-  #}
+  EmbeddedPkg/RealTimeClockRuntimeDxe/RealTimeClockRuntimeDxe.inf {
+    <LibraryClasses>
+	  RealTimeClockLib|HtcLeoPkg/Library/VirtualRealTimeClockLib/VirtualRealTimeClockLib.inf
+  }
 
   MdeModulePkg/Universal/ReportStatusCodeRouter/RuntimeDxe/ReportStatusCodeRouterRuntimeDxe.inf
   MdeModulePkg/Universal/StatusCodeHandler/RuntimeDxe/StatusCodeHandlerRuntimeDxe.inf
 
-  #
-  # GPIO
-  #
+  # SoC Drivers
+  HtcLeoPkg/Drivers/ClockDxe/ClockDxe.inf
+  HtcLeoPkg/Drivers/GpioDxe/GpioDxe.inf
+  HtcLeoPkg/Drivers/SdccDxe/SdccDxe.inf
 
   #
   # Virtual Keyboard

@@ -1,0 +1,51 @@
+# HtcLeoPkg CI build on VSTS
+
+trigger:
+  branches:
+    include:
+    - main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- script: sudo apt update 
+  displayName: 'Update APT sources'
+
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.10'
+    architecture: 'x64'
+  displayName: Install correct Python
+
+- script:  sudo apt -y install build-essential uuid-dev iasl git nasm python3-distutils crossbuild-essential-armel skales gcc-arm-linux-gnueabihf mkbootimg
+  displayName: 'Install VSTS dependencies'
+
+- script: mkdir /home/vsts/work/edk2stuff
+  displayName: Make work directory
+
+- script: |
+      cd /home/vsts/work/edk2stuff
+      git clone https://github.com/Tianocore/edk2.git --recursive --depth=1
+      git clone https://github.com/HTC-Leo-Revival-Project/HtcLeoPkg.git --depth=1
+      git clone https://github.com/tianocore/edk2-platforms.git --depth=1
+  displayName: Clone sources
+
+- script:  |
+      cd /home/vsts/work/edk2stuff/edk2
+      make -C BaseTools/
+  displayName: Build BaseTools
+
+- script: |
+      cd /home/vsts/work/edk2stuff/HtcLeoPkg
+      export PACKAGES_PATH=$PWD/home/vsts/work/edk2stuff/edk2:$PWD/home/vsts/work/edk2stuff/edk2-platforms:$PWD
+      export WORKSPACE=$PWD/workspace
+      . /home/vsts/work/edk2stuff/edk2/edksetup.sh
+      chmod a+x build.sh
+      ./build.sh
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Htc Leo UEFI build'
+  inputs: 
+    pathtoPublish: /home/vsts/work/edk2stuff/HtcLeoPkg/ImageResources/uefi.img
+    artifactName: Htc Leo UEFI

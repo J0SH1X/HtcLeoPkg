@@ -41,6 +41,9 @@ ArmPlatformGetVirtualMemoryMap (
   IN ARM_MEMORY_REGION_DESCRIPTOR** VirtualMemoryMap
   )
 {
+  // You are not expected to call this
+	ASSERT(FALSE);
+  
   ARM_MEMORY_REGION_ATTRIBUTES  CacheAttributes;
   UINTN                         Index = 0;
   ARM_MEMORY_REGION_DESCRIPTOR  *VirtualMemoryTable;
@@ -62,18 +65,6 @@ ArmPlatformGetVirtualMemoryMap (
   VirtualMemoryTable[Index].Length         = 0x11800000;
   VirtualMemoryTable[Index].Attributes     = SOC_REGISTERS_ATTRIBUTES;
 
-  // Framebuffer
-  /*VirtualMemoryTable[++Index].PhysicalBase = 0x02A00000;
-  VirtualMemoryTable[Index].VirtualBase    = 0x02A00000;
-  VirtualMemoryTable[Index].Length         = 0x000BBB00;
-  VirtualMemoryTable[Index].Attributes     = DDR_ATTRIBUTES_UNCACHED;*/
-
-  // SOC registers region 2
-  /*VirtualMemoryTable[Index].PhysicalBase   = 0x02ABBB00;
-  VirtualMemoryTable[Index].VirtualBase    = 0x02ABBB00;
-  VirtualMemoryTable[Index].Length         = 0x0ED44500;
-  VirtualMemoryTable[Index].Attributes     = SOC_REGISTERS_ATTRIBUTES;*/
-
   // Rearranged system memory regions
   VirtualMemoryTable[++Index].PhysicalBase = 0x11800000;
   VirtualMemoryTable[Index].VirtualBase    = 0x11800000;
@@ -92,6 +83,18 @@ ArmPlatformGetVirtualMemoryMap (
   VirtualMemoryTable[Index].Length         = 0x1E5F8000;
   VirtualMemoryTable[Index].Attributes     = CacheAttributes;
 
+  // VIC region
+  VirtualMemoryTable[++Index].PhysicalBase = 0xAC000000;
+  VirtualMemoryTable[Index].VirtualBase    = 0xAC000000;
+  VirtualMemoryTable[Index].Length         = 0x00100000;
+  VirtualMemoryTable[Index].Attributes     = SOC_REGISTERS_ATTRIBUTES;
+
+  // GPT region
+  VirtualMemoryTable[++Index].PhysicalBase = 0xAC100000;
+  VirtualMemoryTable[Index].VirtualBase    = 0xAC100000;
+  VirtualMemoryTable[Index].Length         = 0x00100000;
+  VirtualMemoryTable[Index].Attributes     = SOC_REGISTERS_ATTRIBUTES;
+
   // End of Table
   VirtualMemoryTable[++Index].PhysicalBase = 0;
   VirtualMemoryTable[Index].VirtualBase    = 0;
@@ -102,14 +105,3 @@ ArmPlatformGetVirtualMemoryMap (
 
   *VirtualMemoryMap = VirtualMemoryTable;
 }
-
-// DDR - 1.0GB section
-    /*VirtualMemoryTable[Index].PhysicalBase    = PcdGet64 (PcdSystemMemoryBase);
-    VirtualMemoryTable[Index].VirtualBase     = PcdGet64 (PcdSystemMemoryBase);
-    VirtualMemoryTable[Index].Length          = PcdGet64 (PcdSystemMemorySize);
-    VirtualMemoryTable[Index].Attributes      = CacheAttributes;
-    // QSD8250 SOC peripherals
-    VirtualMemoryTable[++Index].PhysicalBase  = QSD8250_PERIPH_BASE;
-    VirtualMemoryTable[Index].VirtualBase     = QSD8250_PERIPH_BASE;
-    VirtualMemoryTable[Index].Length          = QSD8250_PERIPH_SZ;
-    VirtualMemoryTable[Index].Attributes      = ARM_MEMORY_REGION_ATTRIBUTE_DEVICE;*/

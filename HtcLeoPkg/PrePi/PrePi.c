@@ -26,6 +26,19 @@ UINT64  mSystemMemoryEnd = FixedPcdGet64 (PcdSystemMemoryBase) +
                            FixedPcdGet64 (PcdSystemMemorySize) - 1;
 
 VOID
+PainScreen(
+  IN  UINTN   Colour
+)
+{
+  UINT8 *start = (UINT8 *)0x02A00000;
+  UINT8 *end = (UINT8 *)0x02ABBB00;  
+
+  for (UINT8 *ptr = start; ptr < end; ptr++) {
+    *ptr = 0;
+  }
+}
+
+VOID
 PrePiMain (
   IN  UINTN   UefiMemoryBase,
   IN  UINTN   StacksBase,
@@ -43,12 +56,33 @@ PrePiMain (
   ArchInitialize ();
 
   // Paint the screen to black
-  UINT8 *start = (UINT8 *)0x02A00000;
-  UINT8 *end = (UINT8 *)0x02ABBB00;  
+  PainScreen(Black);
 
-  for (UINT8 *ptr = start; ptr < end; ptr++) {
-    *ptr = 0;
-  }
+  // There are still a few things to do
+  /* enable cp10 and cp11 */
+	UINT32 val;
+	__asm__ volatile("mrc	p15, 0, %0, c1, c0, 2" : "=r" (val));
+	val |= (3<<22)|(3<<20);
+	__asm__ volatile("mcr	p15, 0, %0, c1, c0, 2" :: "r" (val));
+
+  ArmInstructionSynchronizationBarrier();
+  ArmDataMemoryBarrier();
+
+	/* set enable bit in fpexc */
+	__asm__ volatile("mrc  p10, 7, %0, c8, c0, 0" : "=r" (val));
+	val |= (1<<30);
+	__asm__ volatile("mcr  p10, 7, %0, c8, c0, 0" :: "r" (val));
+
+  /* enable the cycle count register */
+	UINT32 en;
+	__asm__ volatile("mrc	p15, 0, %0, c9, c12, 0" : "=r" (en));
+	en &= ~(1<<3); /* cycle count every cycle */
+	en |= 1; /* enable all performance counters */
+	__asm__ volatile("mcr	p15, 0, %0, c9, c12, 0" :: "r" (en));
+
+	/* enable cycle counter */
+	en = (1<<31);
+	__asm__ volatile("mcr	p15, 0, %0, c9, c12, 1" :: "r" (en));
 
   // Initialize the Serial Port
   SerialPortInitialize ();
@@ -68,10 +102,10 @@ PrePiMain (
         UefiMemoryBase,
         StacksBase
     ));
-//here
+
   // Initialize the Debug Agent for Source Level Debugging
-  //InitializeDebugAgent (DEBUG_AGENT_INIT_POSTMEM_SEC, NULL, NULL);
-  //SaveAndSetDebugTimerInterrupt (TRUE);
+  InitializeDebugAgent (DEBUG_AGENT_INIT_POSTMEM_SEC, NULL, NULL);
+  SaveAndSetDebugTimerInterrupt (TRUE);
 
   // Declare the PI/UEFI memory region
   HobList = HobConstructor (
@@ -100,7 +134,7 @@ PrePiMain (
   BuildCpuHob (ArmGetPhysicalAddressBits (), PcdGet8 (PcdPrePiCpuIoSize));
 
   // Store timer value logged at the beginning of firmware image execution
-  //Performance.ResetEnd = GetTimeInNanoSecond (StartTimeStamp);
+  Performance.ResetEnd = GetTimeInNanoSecond (StartTimeStamp);
 
   // Build SEC Performance Data Hob
   BuildGuidDataHob (&gEfiFirmwarePerformanceGuid, &Performance, sizeof (Performance));
@@ -113,7 +147,7 @@ PrePiMain (
   ASSERT_EFI_ERROR (Status);
 
   // Now, the HOB List has been initialized, we can register performance information
-  //PERF_START (NULL, "PEI", NULL, StartTimeStamp);
+  PERF_START (NULL, "PEI", NULL, StartTimeStamp);
 
   // SEC phase needs to run library constructors by hand.
   ProcessLibraryConstructorList ();

@@ -1,0 +1,31 @@
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = HtcLeoPlatformResetLib
+  FILE_GUID                      = 4bc0a596-fd31-436e-a726-774639d8b4a4
+  MODULE_TYPE                    = BASE
+  VERSION_STRING                 = 1.0
+  LIBRARY_CLASS                  = EfiResetSystemLib
+ # VALID_ARCHITECTURES            = ARM
+
+[BuildOptions.ARM]
+  GCC:*_*_*_CC_FLAGS = -Werror -Wno-unused-function -Wno-unused-variable -Wno-shift-count-overflow -Wno-incompatible-pointer-types
+[Sources.common]
+  HtcLeoPlatformResetLib.c
+
+[LibraryClasses]
+  DebugLib
+  IoLib
+  TimerLib
+  ArmLib
+
+  MsmPcomLib
+
+[Packages]
+  ArmPkg/ArmPkg.dec
+  EmbeddedPkg/EmbeddedPkg.dec
+  MdePkg/MdePkg.dec
+  HtcLeoPkg/HtcLeoPkg.dec
+  
+[FixedPcd]
+
