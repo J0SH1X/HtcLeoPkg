@@ -208,7 +208,7 @@ EFI_STATUS KeypadDeviceImplGetKeys(
     // 0000 ^0001 = 0001 = decimal 1
     IsPressed = (GpioStatus ? 1 : 0) ^ Context->ActiveLow;
 
-    if (IsPressed = 1) {
+    if (IsPressed) {
       // impl a timed callback here that enables gpio 48 for a few secs and then
       // the callback function should disable it again
     }
