@@ -215,7 +215,7 @@ VOID EnableKeypadLedWithTimer(VOID) {
 
   Status = gBS->SetTimer(
         m_CallbackTimer, TimerPeriodic,
-        EFI_TIMER_PERIOD_MILLISECONDS(1)
+        EFI_TIMER_PERIOD_MILLISECONDS(1000)
     );
 
     ASSERT_EFI_ERROR(Status);
