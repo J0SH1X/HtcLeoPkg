@@ -1,10 +1,15 @@
 #include <PiDxe.h>
+#include <Uefi.h>
 
 #include <Library/LKEnvLib.h>
 
 #include <Library/KeypadDeviceHelperLib.h>
 #include <Library/KeypadDeviceImplLib.h>
 #include <Protocol/KeypadDevice.h>
+#include <Library/UefiLib.h>
+
+
+#define HTCLEO_GPIO_KP_LED	 			48
 
 typedef enum {
   KEY_DEVICE_TYPE_UNKNOWN,
@@ -186,6 +191,36 @@ EFI_STATUS EFIAPI KeypadDeviceImplReset(KEYPAD_DEVICE_PROTOCOL *This)
 extern void gpio_set(unsigned n, unsigned on);
 extern int  gpio_get(unsigned n);
 
+EFI_EVENT m_CallbackTimer = NULL;
+EFI_EVENT m_ExitBootServicesEvent = NULL;
+
+// Callback function to disable the GPIO after a certain time
+VOID EFIAPI DisableKeyPadLed(IN EFI_EVENT Event, IN VOID *Context) {
+  // Disable the GPIO
+  gpio_set(HTCLEO_GPIO_KP_LED, 0);
+}
+
+// Function to enable the GPIO and schedule the callback
+VOID EnableKeypadLedWithTimer(VOID) {
+  gpio_set(HTCLEO_GPIO_KP_LED, 1);
+  EFI_STATUS Status;
+
+      Status = gBS->CreateEvent(
+        EVT_NOTIFY_SIGNAL | EVT_TIMER,
+        TPL_CALLBACK, DisableKeyPadLed, NULL,
+        &m_CallbackTimer
+    );
+
+    ASSERT_EFI_ERROR(Status);
+
+  Status = gBS->SetTimer(
+        m_CallbackTimer, TimerPeriodic,
+        EFI_TIMER_PERIOD_MILLISECONDS(1)
+    );
+
+    ASSERT_EFI_ERROR(Status);
+}
+
 EFI_STATUS KeypadDeviceImplGetKeys(
     KEYPAD_DEVICE_PROTOCOL *This, KEYPAD_RETURN_API *KeypadReturnApi,
     UINT64 Delta)
@@ -193,7 +228,7 @@ EFI_STATUS KeypadDeviceImplGetKeys(
   UINT8   GpioStatus;
   BOOLEAN IsPressed;
   UINTN   Index;
-  DEBUG((EFI_D_ERROR, "KeypadDeviceImplGetKeys!\n"));
+ // DEBUG((EFI_D_ERROR, "KeypadDeviceImplGetKeys!\n"));
 
   for (Index = 0; Index < (sizeof(KeyList) / sizeof(KeyList[0])); Index++) {
     KEY_CONTEXT_PRIVATE *Context = KeyList[Index];
@@ -206,11 +241,8 @@ EFI_STATUS KeypadDeviceImplGetKeys(
      if (Context->DeviceType == KEY_DEVICE_TYPE_LEGACY) {
       // impliement hd2 gpio shit here
       GpioStatus = gpio_get(Context->Gpio);
-      DEBUG((EFI_D_ERROR, "LEGACY KEYTYPE GPIO STATUS: %d!\n", GpioStatus));
-      gpio_set(48, 1);
     }
     else if (Context->DeviceType == KEY_DEVICE_TYPE_KEYMATRIX) {
-      DEBUG((EFI_D_ERROR, "KEYMATRIX!\n"));
       gpio_set(Context->GpioOut, 0);
       GpioStatus = gpio_get(Context->GpioIn);
     }
@@ -222,11 +254,9 @@ EFI_STATUS KeypadDeviceImplGetKeys(
     // 0000 ^0001 = 0001 = decimal 1
     IsPressed = (GpioStatus ? 1 : 0) ^ Context->ActiveLow;
 
-    DEBUG((EFI_D_ERROR, "IsPressed var is: %d!\n", IsPressed));
 
     if (IsPressed) {
-      // impl a timed callback here that enables gpio 48 for a few secs and then
-      // the callback function should disable it again
+      EnableKeypadLedWithTimer();
     }
 
     if (Context->DeviceType == KEY_DEVICE_TYPE_KEYMATRIX) {
