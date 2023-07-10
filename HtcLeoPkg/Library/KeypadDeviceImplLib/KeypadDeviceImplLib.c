@@ -51,6 +51,8 @@ VOID KeypadInitializeKeyContextPrivate(KEY_CONTEXT_PRIVATE *Context)
 {
   Context->IsValid    = FALSE;
   Context->Gpio       = 0;
+  Context->GpioOut    = 0;
+  Context->GpioIn     = 0;
   Context->DeviceType = KEY_DEVICE_TYPE_UNKNOWN;
   Context->ActiveLow  = FALSE;
 }
@@ -84,7 +86,7 @@ KeypadDeviceImplConstructor(VOID)
   KEY_CONTEXT_PRIVATE *StaticContext;
 
   // Reset all keys
-  for (Index = 0; Index < ARRAY_SIZE(KeyList); Index++) {
+  for (Index = 0; Index < (sizeof(KeyList) / sizeof(KeyList[0])); Index++) {
     KeypadInitializeKeyContextPrivate(KeyList[Index]);
   }
 
@@ -98,7 +100,7 @@ KeypadDeviceImplConstructor(VOID)
   StaticContext->IsValid    = TRUE;
 
     // volume up button
-  StaticContext             = KeypadKeyCodeToKeyContext(116);
+  StaticContext             = KeypadKeyCodeToKeyContext(115);
   StaticContext->DeviceType = KEY_DEVICE_TYPE_KEYMATRIX;
   StaticContext->GpioOut    = 33;
   StaticContext->GpioIn     = 42;
@@ -106,7 +108,7 @@ KeypadDeviceImplConstructor(VOID)
   StaticContext->IsValid    = TRUE;
 
     // volume down button
-  StaticContext             = KeypadKeyCodeToKeyContext(116);
+  StaticContext             = KeypadKeyCodeToKeyContext(114);
   StaticContext->DeviceType = KEY_DEVICE_TYPE_KEYMATRIX;
   StaticContext->GpioOut    = 33;
   StaticContext->GpioIn     = 41;
